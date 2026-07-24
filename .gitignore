@@ -1,5 +1,12 @@
 .DS_Store
+
 zkp
+
+# # ZKP — ignore large generated files and dependencies, keep source and compiled artifacts
+# /zkp/circom/
+# /zkp/**/node_modules/
+# /zkp/**/*.wtns
+# /zkp/**/inputs/*.ptau
 
 # Python
 __pycache__/
@@ -18,3 +25,7 @@ build/
 .idea/
 .vscode/
 ToDo.txt
+*notes*
+/sample_data
+seed.py
+*test*
