@@ -12,7 +12,10 @@ app.include_router(graph_router, prefix=settings.api_v1_prefix)
 
 @app.on_event("startup")
 def startup():
-    init_db()
+    try:
+        init_db()
+    except Exception as error:
+        print(f"Database initialisation skipped: {error}")
 
 @app.get("/")
 def root():
