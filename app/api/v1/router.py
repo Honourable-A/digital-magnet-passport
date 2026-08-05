@@ -24,24 +24,25 @@ def health_check():
     return {"status": "ok"}
 
 # -- auth --
+# register and login are now handled by Supabase Auth on the client side
 
-@router.post("/auth/register", status_code=201)
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    user = User(email=data.email, password_hash=hash_password(data.password), role=data.role)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return {"message": "User registered", "email": user.email, "role": user.role}
+# @router.post("/auth/register", status_code=201)
+# def register(data: RegisterRequest, db: Session = Depends(get_db)):
+#     existing = db.query(User).filter(User.email == data.email).first()
+#     if existing:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+#     user = User(email=data.email, password_hash=hash_password(data.password), role=data.role)
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+#     return {"message": "User registered", "email": user.email, "role": user.role}
 
-@router.post("/auth/login")
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"access_token": create_token(user)}
+# @router.post("/auth/login")
+# def login(data: LoginRequest, db: Session = Depends(get_db)):
+#     user = db.query(User).filter(User.email == data.email).first()
+#     if not user or not verify_password(data.password, user.password_hash):
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+#     return {"access_token": create_token(user)}
 
 @router.post("/auth/logout")
 def logout(user: User = Depends(get_current_user)):
@@ -105,14 +106,14 @@ def get_composition(id: int, db: Session = Depends(get_db), user: User = Depends
         raise HTTPException(status_code=404, detail="Composition not found")
     log_action(db, user.id, "VIEW_COMPOSITION", "passport", id)
     role = user.role
-    if role == "PUBLIC":
-        return composition_presence(result)
-    elif role == "PARTNER":
-        return composition_ranges(result)
-    elif role in ["RECYCLER", "AUDITOR"]:
+    # PUBLIC and PARTNER roles phased out per supervisor — kept here for reference
+    # if role == "PUBLIC":
+    #     return composition_presence(result)
+    # elif role == "PARTNER":
+    #     return composition_ranges(result)
+    if role in ["RECYCLER", "AUDITOR"]:
         return composition_exact(result)
     else:
-        # MANUFACTURER, REGULATOR, ADMIN get full data
         return composition_full(result)
 
 @router.get("/passport/{id}/audit")

@@ -8,3 +8,10 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class AdminCreateUserRequest(BaseModel):
+    email: str
+    role: str
+
+class AdminUpdateRoleRequest(BaseModel):
+    role: str

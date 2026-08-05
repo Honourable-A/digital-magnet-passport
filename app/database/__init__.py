@@ -27,6 +27,7 @@ def init_db():
     import app.models.supply_chain_edge
     import app.models.verification_claim
     import app.models.passport_certificate
+    import app.models.passport_event
     Base.metadata.create_all(bind=engine)
 
 def get_db():

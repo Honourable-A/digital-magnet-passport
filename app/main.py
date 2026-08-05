@@ -6,12 +6,14 @@ from app.api.v1.router import router as v1_router
 from app.api.v1.verify import router as verify_router
 from app.api.v1.graph import router as graph_router
 from app.api.v1.signal_test import router as signal_router
+from app.api.v1.admin import router as admin_router
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 app.mount("/static", StaticFiles(directory="static"), name="static") # Mount static files directory -  for p2p testing
 app.include_router(v1_router, prefix=settings.api_v1_prefix)
 app.include_router(verify_router, prefix=settings.api_v1_prefix)
 app.include_router(graph_router, prefix=settings.api_v1_prefix)
+app.include_router(admin_router, prefix=settings.api_v1_prefix)
 app.include_router(signal_router) # for accessing signal server for p2p testing
 
 @app.on_event("startup")
