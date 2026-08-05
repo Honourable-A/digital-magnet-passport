@@ -54,12 +54,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer)
     try:
         if settings.supabase_jwks_url:
             payload = _decode_supabase_token(token)
+            uid = payload.get("sub")
             email = payload.get("email")
-            user = db.query(User).filter(User.email == email).first()
+
+            # look up by supabase_uid first (stable), fall back to email for existing rows
+            user = db.query(User).filter(User.supabase_uid == uid).first()
+            if not user:
+                user = db.query(User).filter(User.email == email).first()
+                if user and uid and not user.supabase_uid:
+                    # bind the uid on first login so future lookups use it
+                    user.supabase_uid = uid
+                    db.commit()
         else:
             # local jwt fallback
             payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
             user = db.query(User).filter(User.id == int(payload["sub"])).first()
+
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         return user

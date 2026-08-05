@@ -36,4 +36,4 @@ def update_role(user_id: int, data: AdminUpdateRoleRequest, db: Session = Depend
 @router.get("/admin/users")
 def list_users(db: Session = Depends(get_db), user: User = Depends(require_roles(["ADMIN"]))):
     users = db.query(User).all()
-    return [{"id": u.id, "email": u.email, "role": u.role, "created_at": u.created_at} for u in users]
+    return [{"id": u.id, "email": u.email, "role": u.role, "supabase_uid": u.supabase_uid, "created_at": u.created_at} for u in users]
