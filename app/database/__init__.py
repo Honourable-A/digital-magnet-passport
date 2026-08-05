@@ -9,13 +9,13 @@ engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 def init_db():
-    # create db if not there, then create tables
-    db_name = settings.database_url.rsplit("/", 1)[-1]
-    base_url = settings.database_url.rsplit("/", 1)[0]
-    tmp = create_engine(base_url + "/", isolation_level="AUTOCOMMIT")
-    with tmp.connect() as conn:
-        conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{db_name}`"))
-    tmp.dispose()
+    # mysql only — supabase already has the database, skip this
+    # db_name = settings.database_url.rsplit("/", 1)[-1]
+    # base_url = settings.database_url.rsplit("/", 1)[0]
+    # tmp = create_engine(base_url + "/", isolation_level="AUTOCOMMIT")
+    # with tmp.connect() as conn:
+    #     conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{db_name}`"))
+    # tmp.dispose()
     import app.models.user
     import app.models.audit_log
     import app.models.passport
