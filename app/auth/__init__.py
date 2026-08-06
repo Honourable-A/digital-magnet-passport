@@ -1,10 +1,10 @@
 import urllib.request
 import json
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-import bcrypt
+# import bcrypt
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
@@ -12,21 +12,21 @@ from app.models.user import User
 
 bearer = HTTPBearer()
 
-def hash_password(password):
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+# -- local auth helpers (kept, not used — supabase manages passwords now) --
+# def hash_password(password):
+#     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
-def verify_password(password, hashed):
-    return bcrypt.checkpw(password.encode(), hashed.encode())
+# def verify_password(password, hashed):
+#     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-# -- local jwt (kept, used in /auth/login) --
-def create_token(user):
-    payload = {
-        "sub": str(user.id),
-        "email": user.email,
-        "role": user.role,
-        "exp": datetime.utcnow() + timedelta(minutes=60)
-    }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+# def create_token(user):
+#     payload = {
+#         "sub": str(user.id),
+#         "email": user.email,
+#         "role": user.role,
+#         "exp": datetime.utcnow() + timedelta(minutes=60)
+#     }
+#     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 # -- supabase es256 jwt --
 _jwks_cache = None
@@ -65,10 +65,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer)
                     # bind the uid on first login so future lookups use it
                     user.supabase_uid = uid
                     db.commit()
-        else:
-            # local jwt fallback
-            payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-            user = db.query(User).filter(User.id == int(payload["sub"])).first()
+        # else:
+        #     # local jwt fallback
+        #     payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        #     user = db.query(User).filter(User.id == int(payload["sub"])).first()
 
         if not user:
             raise HTTPException(status_code=401, detail="User not found")

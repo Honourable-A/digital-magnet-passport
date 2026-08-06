@@ -7,8 +7,8 @@ from app.models.supply_chain_edge import SupplyChainEdge
 from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.schemas.passport import PassportCreate, PassportUpdate, PassportOut
-from app.schemas.user import RegisterRequest, LoginRequest
-from app.auth import hash_password, verify_password, create_token, get_current_user, require_roles
+# from app.schemas.user import RegisterRequest, LoginRequest
+from app.auth import get_current_user, require_roles
 from app.utils import log_action, composition_presence, composition_ranges, composition_exact, composition_full
 
 router = APIRouter()
