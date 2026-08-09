@@ -9,28 +9,21 @@ engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 def init_db():
-    # mysql only — supabase already has the database, skip this
-    # db_name = settings.database_url.rsplit("/", 1)[-1]
-    # base_url = settings.database_url.rsplit("/", 1)[0]
-    # tmp = create_engine(base_url + "/", isolation_level="AUTOCOMMIT")
-    # with tmp.connect() as conn:
-    #     conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{db_name}`"))
-    # tmp.dispose()
-    # import app.models.user  # removed — relying on Supabase Auth entirely
-    import app.models.audit_log
-    import app.models.passport
-    # import app.models.passport_identity  # merged into passport — see passport.py
-    import app.models.passport_material
-    import app.models.passport_sustainability
-    import app.models.passport_compliance
-    import app.models.company
-    import app.models.supply_chain_edge
-    import app.models.verification_claim
-    import app.models.passport_certificate
-    import app.models.passport_event
-    import app.models.passport_lineage
-    import app.models.passport_custody
+    # only peer_session is owned by FastAPI — all passport/supply-chain tables are managed by Supabase/Next.js
     import app.models.peer_session
+    # import app.models.audit_log           # kept — not created by fastapi in supabase stager
+    # import app.models.passport            # supabase-managed
+    # import app.models.passport_identity   # merged into passport
+    # import app.models.passport_material   # supabase-managed
+    # import app.models.passport_sustainability  # supabase-managed
+    # import app.models.passport_compliance # supabase-managed
+    # import app.models.company             # supabase-managed
+    # import app.models.supply_chain_edge   # supabase-managed
+    # import app.models.verification_claim  # depends on passport.id — supabase-managed
+    # import app.models.passport_certificate  # supabase-managed
+    # import app.models.passport_event      # supabase-managed
+    # import app.models.passport_lineage    # supabase-managed
+    # import app.models.passport_custody    # supabase-managed
     Base.metadata.create_all(bind=engine)
 
 def get_db():
