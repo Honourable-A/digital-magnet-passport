@@ -2,170 +2,197 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ZKP Request — TRACE4MAGNET</title>
+  <title>Verification Request — TRACE4MAGNET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
-    body { background: #0f0f0f; color: #ddd; min-height: 100vh; padding: 32px; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .topbar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 32px; }
-    h1 { font-size: 13px; color: #555; letter-spacing: 3px; text-transform: uppercase; }
-    .topbar-right { font-size: 11px; color: #444; }
-    .topbar-right span { color: #777; margin-right: 16px; }
-    .topbar-right a { color: #444; cursor: pointer; text-decoration: none; }
-    .topbar-right a:hover { color: #aaa; }
-
-    .panel { background: #161616; border: 1px solid #1e1e1e; border-radius: 6px; padding: 24px; margin-bottom: 20px; }
-    .panel h2 { font-size: 11px; color: #444; letter-spacing: 2px; margin-bottom: 18px; }
-
-    .target-card { background: #111; border: 1px solid #222; border-radius: 4px; padding: 14px 18px;
-      margin-bottom: 22px; display: flex; gap: 24px; align-items: center; font-size: 12px; color: #777; }
-    .target-card strong { color: #ddd; }
-
-    .field-row { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
-    label { font-size: 11px; color: #555; width: 120px; flex-shrink: 0; }
-    select, input {
-      background: #1a1a1a; border: 1px solid #2a2a2a; color: #ddd;
-      padding: 8px 12px; border-radius: 4px; font-size: 12px; font-family: monospace; flex: 1;
+    :root {
+      --background:          #ffffff;
+      --foreground:          #09090b;
+      --card:                #ffffff;
+      --primary:             #18181b;
+      --primary-foreground:  #fafafa;
+      --secondary:           #f4f4f5;
+      --secondary-foreground:#18181b;
+      --muted:               #f4f4f5;
+      --muted-foreground:    #71717a;
+      --border:              #e4e4e7;
+      --input:               #e4e4e7;
+      --ring:                #a1a1aa;
+      --destructive:         #dc2626;
+      --radius-sm:  6px;
+      --radius-md:  8px;
+      --radius-lg:  10px;
+      --radius-xl:  14px;
+      --radius-4xl: 26px;
     }
-    select:focus, input:focus { outline: none; border-color: #444; }
 
-    button {
-      background: #1e1e1e; border: 1px solid #2e2e2e; color: #aaa;
-      padding: 9px 24px; border-radius: 4px; cursor: pointer;
-      font-size: 11px; font-family: monospace; letter-spacing: 1px;
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--background); color: var(--foreground); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+
+    .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .brand  { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand span { color: var(--muted-foreground); font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted-foreground); }
+    .back-link { font-size: 13px; color: var(--muted-foreground); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .back-link:hover { color: var(--foreground); }
+
+    main { padding: 32px 24px; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+    h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.025em; }
+    .page-desc { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; }
+
+    .card { background: var(--card); border-radius: var(--radius-xl); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); padding: 24px; }
+    .card-title { font-size: 13px; font-weight: 500; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 16px; }
+
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-row:first-child { padding-top: 0; }
+    .info-label { color: var(--muted-foreground); }
+    .info-value { font-weight: 500; }
+    .info-value.mono { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field:last-of-type { margin-bottom: 0; }
+    label  { font-size: 13px; font-weight: 500; }
+    .field-hint { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+
+    select, .input {
+      height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input);
+      background: var(--background); padding: 0 12px; font-size: 14px; font-family: inherit;
+      color: var(--foreground); outline: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      transition: border-color 120ms, box-shadow 120ms; appearance: none;
     }
-    button:hover { background: #252525; border-color: #444; color: #ddd; }
-    button:disabled { opacity: 0.3; cursor: default; }
-    button.send { border-color: #2a3a2a; color: #81c784; }
-    button.send:hover { background: #1a2a1a; }
-    button.back { border-color: #222; color: #555; }
-    button.back:hover { background: #1a1a1a; border-color: #333; color: #888; }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+    select:focus, .input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(161,161,170,0.25); }
+    .input::placeholder { color: var(--muted-foreground); }
 
-    .row { display: flex; gap: 10px; margin-top: 20px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; height: 36px; padding: 0 16px; border: 1px solid transparent; cursor: pointer; transition: all 120ms; font-family: inherit; white-space: nowrap; }
+    .btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+    .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-outline { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .btn-outline:hover { background: var(--muted); }
 
-    .msg {
-      font-size: 11px; padding: 8px 14px; border-radius: 4px;
-      background: #1a1a1a; border: 1px solid #222; margin-top: 14px; color: #555;
-    }
-    .msg.ok  { color: #4caf50; border-color: #1a3a1a; }
-    .msg.err { color: #ef5350; border-color: #3a1a1a; }
+    .badge { display: inline-flex; align-items: center; height: 20px; border-radius: var(--radius-4xl); padding: 0 8px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
+    .badge.MANUFACTURER { background: #18181b; color: #fafafa; }
+    .badge.RECYCLER     { background: #f4f4f5; color: #18181b; border-color: #e4e4e7; }
 
-    .hint { font-size: 10px; color: #333; margin-top: 4px; }
+    .alert { border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; border: 1px solid transparent; margin-top: 16px; }
+    .alert-error { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.20); color: #b91c1c; }
 
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; letter-spacing: 1px; }
-    .badge.MANUFACTURER { background: #1a2a3a; color: #64b5f6; }
-    .badge.RECYCLER     { background: #1a3a1a; color: #81c784; }
+    .form-footer { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   </style>
 </head>
 <body>
 
-<div class="topbar">
-  <h1>TRACE4MAGNET — ZKP REQUEST</h1>
-  <div class="topbar-right">
-    <span id="info-email"></span>
-    <span class="badge" id="info-role-badge"></span>
-    &nbsp;&nbsp;
-    <a onclick="window.location.href='peer_discovery.html'">← back to peer list</a>
+<div class="header">
+  <span class="brand">TRACE4MAGNET <span>/ Verification Request</span></span>
+  <div class="header-right">
+    <a class="back-link" onclick="cancelRequest()">← Back to peer list</a>
   </div>
 </div>
 
-<div class="panel">
-  <h2>TARGET PEER</h2>
-  <div class="target-card">
-    <div>Peer: <strong id="target-name">—</strong></div>
-    <div>Role: <span class="badge MANUFACTURER" id="target-role">MANUFACTURER</span></div>
-    <div>Passport: <strong>DMP-TEST-001</strong></div>
+<main>
+  <div>
+    <h1>New verification request</h1>
+    <p class="page-desc">The manufacturer will generate a ZK proof in their browser. Your value threshold is never revealed to them.</p>
   </div>
 
-  <h2>VERIFICATION PARAMETERS</h2>
-  <p class="hint" style="margin-bottom:18px; color:#333">
-    The manufacturer will receive this request and prove the claim without revealing the actual value.
-  </p>
-
-  <div class="field-row">
-    <label>element</label>
-    <select id="sel-element">
-      <option value="Nd">Neodymium (Nd)</option>
-      <option value="Dy">Dysprosium (Dy)</option>
-      <option value="Pr">Praseodymium (Pr)</option>
-      <option value="Tb">Terbium (Tb)</option>
-      <option value="Gd">Gadolinium (Gd)</option>
-      <option value="La">Lanthanum (La)</option>
-      <option value="Ce">Cerium (Ce)</option>
-      <option value="Sm">Samarium (Sm)</option>
-      <option value="Ho">Holmium (Ho)</option>
-    </select>
+  <!-- Target peer -->
+  <div class="card">
+    <p class="card-title">Target peer</p>
+    <div class="info-row">
+      <span class="info-label">Peer</span>
+      <span class="info-value" id="target-name">—</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Role</span>
+      <span class="info-value"><span class="badge MANUFACTURER" id="target-role">MANUFACTURER</span></span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Passport</span>
+      <span class="info-value mono">DMP-TEST-001</span>
+    </div>
   </div>
 
-  <div class="field-row">
-    <label>condition</label>
-    <select id="sel-operator">
-      <option value="gt">Greater than (&gt;)</option>
-      <option value="lt">Less than (&lt;)</option>
-    </select>
-  </div>
+  <!-- Parameters form -->
+  <div class="card">
+    <p class="card-title">Verification parameters</p>
 
-  <div class="field-row">
-    <label>threshold (%)</label>
-    <input type="number" id="inp-threshold" placeholder="e.g. 30" min="0" max="100" step="0.1">
-  </div>
+    <div class="field">
+      <label for="sel-element">Element</label>
+      <select id="sel-element">
+        <option value="Nd">Neodymium (Nd)</option>
+        <option value="Dy">Dysprosium (Dy)</option>
+        <option value="Pr">Praseodymium (Pr)</option>
+        <option value="Tb">Terbium (Tb)</option>
+        <option value="Gd">Gadolinium (Gd)</option>
+        <option value="La">Lanthanum (La)</option>
+        <option value="Ce">Cerium (Ce)</option>
+        <option value="Sm">Samarium (Sm)</option>
+        <option value="Ho">Holmium (Ho)</option>
+      </select>
+    </div>
 
-  <div id="send-msg" class="msg" style="display:none"></div>
+    <div class="field">
+      <label for="sel-operator">Condition</label>
+      <select id="sel-operator">
+        <option value="gt">Greater than (&gt;)</option>
+        <option value="lt">Less than (&lt;)</option>
+      </select>
+    </div>
 
-  <div class="row">
-    <button type="button" id="btn-send" class="send">send verification request →</button>
-    <button type="button" class="back" onclick="cancelRequest()">cancel</button>
+    <div class="field">
+      <label for="inp-threshold">Threshold (%)</label>
+      <input class="input" type="number" id="inp-threshold" placeholder="e.g. 30" min="0" max="100" step="0.1">
+      <span class="field-hint">Enter the percentage threshold for the selected element.</span>
+    </div>
+
+    <div id="form-alert" class="alert alert-error" style="display:none"></div>
+
+    <div class="form-footer">
+      <button class="btn btn-primary" id="btn-send">Send request</button>
+      <button class="btn btn-outline" type="button" onclick="cancelRequest()">Cancel</button>
+    </div>
   </div>
-</div>
+</main>
 
 <script>
-  const API = "http://localhost:8000/api/v1";
+  const API    = "http://localhost:8000/api/v1";
+  const token  = sessionStorage.getItem("t4m_token");
+  const myRole = sessionStorage.getItem("t4m_role") || "";
+  const target = JSON.parse(sessionStorage.getItem("t4m_target") || "null");
 
-  const token   = sessionStorage.getItem("t4m_token");
-  const myEmail = sessionStorage.getItem("t4m_email") || "";
-  const myRole  = sessionStorage.getItem("t4m_role")  || "";
-  const myUid   = sessionStorage.getItem("t4m_uid")   || "";
-  const target  = JSON.parse(sessionStorage.getItem("t4m_target") || "null");
-
-  // guard — must be RECYCLER with a chosen target
   if (!token || myRole !== "RECYCLER" || !target) {
     window.location.href = "peer_discovery.html";
   }
 
-  document.getElementById("info-email").textContent = myEmail;
-  const badge = document.getElementById("info-role-badge");
-  badge.textContent = myRole;
-  badge.className = "badge " + myRole;
-
   document.getElementById("target-name").textContent = target.name;
   document.getElementById("target-role").textContent = target.role;
-
-  function showMsg(text, type) {
-    const el = document.getElementById("send-msg");
-    el.style.display = "block";
-    el.className = "msg " + (type || "");
-    el.textContent = text;
-  }
+  document.getElementById("target-role").className   = "badge " + target.role;
 
   document.getElementById("btn-send").onclick = () => {
     const element   = document.getElementById("sel-element").value;
     const operator  = document.getElementById("sel-operator").value;
     const threshold = parseFloat(document.getElementById("inp-threshold").value);
+    const alertEl   = document.getElementById("form-alert");
 
-    if (!threshold && threshold !== 0) {
-      showMsg("Please enter a threshold value.", "err");
+    if (!document.getElementById("inp-threshold").value || isNaN(threshold)) {
+      alertEl.style.display = "block";
+      alertEl.textContent   = "Please enter a threshold value.";
       return;
     }
 
+    alertEl.style.display = "none";
     sessionStorage.setItem("t4m_zkp_form", JSON.stringify({
       element, operator, threshold, passport_id: "DMP-TEST-001"
     }));
-
     window.location.href = "zkp_queue.html";
   };
 
   async function cancelRequest() {
-    // release the reserved slot
     if (target) {
       await fetch(`${API}/p2p/disconnect/${target.id}`, {
         method: "POST",
