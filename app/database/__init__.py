@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
 
@@ -11,7 +11,6 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 def init_db():
     import app.models.audit_log
     import app.models.passport
-    # import app.models.passport_identity  # merged into passport — see passport.py
     import app.models.passport_material
     import app.models.passport_sustainability
     import app.models.passport_compliance

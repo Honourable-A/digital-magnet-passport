@@ -8,23 +8,6 @@ from app.schemas.user import CurrentUser
 
 bearer = HTTPBearer()
 
-# -- local auth helpers (kept, not used — supabase manages passwords now) --
-# def hash_password(password):
-#     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-# def verify_password(password, hashed):
-#     return bcrypt.checkpw(password.encode(), hashed.encode())
-
-# def create_token(user):
-#     payload = {
-#         "sub": str(user.id),
-#         "email": user.email,
-#         "role": user.role,
-#         "exp": datetime.utcnow() + timedelta(minutes=60)
-#     }
-#     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-
-# -- supabase es256 jwt --
 _jwks_cache = None
 
 def _fetch_jwks():
