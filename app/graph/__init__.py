@@ -1,14 +1,17 @@
-from neo4j import GraphDatabase
-from app.config import settings
+# neo4j deferred — not in scope for current Supabase stager
+# re-enable when blockchain/graph layer is introduced
 
-driver = GraphDatabase.driver(
-    settings.neo4j_uri,
-    auth=(settings.neo4j_user, settings.neo4j_password)
-)
+# from neo4j import GraphDatabase
+# from app.config import settings
 
-def get_graph():
-    session = driver.session()
-    try:
-        yield session
-    finally:
-        session.close()
+# driver = GraphDatabase.driver(
+#     settings.neo4j_uri,
+#     auth=(settings.neo4j_user, settings.neo4j_password)
+# )
+
+# def get_graph():
+#     session = driver.session()
+#     try:
+#         yield session
+#     finally:
+#         session.close()
