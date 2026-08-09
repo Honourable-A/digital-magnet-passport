@@ -16,10 +16,10 @@ def init_db():
     # with tmp.connect() as conn:
     #     conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{db_name}`"))
     # tmp.dispose()
-    import app.models.user
+    # import app.models.user  # removed — relying on Supabase Auth entirely
     import app.models.audit_log
     import app.models.passport
-    import app.models.passport_identity
+    # import app.models.passport_identity  # merged into passport — see passport.py
     import app.models.passport_material
     import app.models.passport_sustainability
     import app.models.passport_compliance
@@ -28,6 +28,9 @@ def init_db():
     import app.models.verification_claim
     import app.models.passport_certificate
     import app.models.passport_event
+    import app.models.passport_lineage
+    import app.models.passport_custody
+    import app.models.peer_session
     Base.metadata.create_all(bind=engine)
 
 def get_db():

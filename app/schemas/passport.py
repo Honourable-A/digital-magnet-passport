@@ -6,21 +6,19 @@ class PassportCreate(BaseModel):
     passport_id: str
     magnet_type: str
     application_sector: str
+    manufacturer: Optional[str] = None
     current_stage: str
     manufacturing_date: date
     country_of_origin: str
-    recycled_content: Optional[float] = None
-    carbon_footprint: Optional[float] = None
     status: bool = True
 
 class PassportUpdate(BaseModel):
     magnet_type: Optional[str] = None
     application_sector: Optional[str] = None
+    manufacturer: Optional[str] = None
     current_stage: Optional[str] = None
     manufacturing_date: Optional[date] = None
     country_of_origin: Optional[str] = None
-    recycled_content: Optional[float] = None
-    carbon_footprint: Optional[float] = None
     status: Optional[bool] = None
 
 class PassportOut(BaseModel):
@@ -28,11 +26,10 @@ class PassportOut(BaseModel):
     passport_id: str
     magnet_type: str
     application_sector: str
+    manufacturer: Optional[str]
     current_stage: str
     manufacturing_date: date
     country_of_origin: str
-    recycled_content: Optional[float]
-    carbon_footprint: Optional[float]
     status: bool
     created_at: datetime
     updated_at: datetime

@@ -9,11 +9,11 @@ class Passport(Base):
     passport_id = Column(String(100), unique=True, nullable=False)
     magnet_type = Column(String(100), nullable=False)
     application_sector = Column(String(200), nullable=False)
+    manufacturer = Column(String(200), nullable=True)   # merged from passport_identity
     current_stage = Column(String(100), nullable=False)
     manufacturing_date = Column(Date, nullable=False)
     country_of_origin = Column(String(100), nullable=False)
-    recycled_content = Column(Float, nullable=True)
-    carbon_footprint = Column(Float, nullable=True)
+    # recycled_content and carbon_footprint removed — owned by passport_sustainability
     status = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

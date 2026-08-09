@@ -1,39 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.user import User
-from app.schemas.user import AdminCreateUserRequest, AdminUpdateRoleRequest
+# from app.models.user import User  # removed — user table dropped, managed by Supabase Auth
+from app.schemas.user import CurrentUser, AdminCreateUserRequest, AdminUpdateRoleRequest
 from app.auth import get_current_user, require_roles
 
 router = APIRouter()
 
 VALID_ROLES = ["MANUFACTURER", "RECYCLER", "AUDITOR", "REGULATOR", "ADMIN"]
 
-@router.post("/admin/users", status_code=201)
-def create_user(data: AdminCreateUserRequest, db: Session = Depends(get_db), user: User = Depends(require_roles(["ADMIN"]))):
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="User already exists")
-    if data.role not in VALID_ROLES:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of {VALID_ROLES}")
-    new_user = User(email=data.email, password_hash="supabase-managed", role=data.role)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"id": new_user.id, "email": new_user.email, "role": new_user.role}
+# user creation and role management are now done via Supabase Auth Admin API
+# roles are stored in raw_user_meta_data on auth.users
 
-@router.post("/admin/users/{user_id}/role")
-def update_role(user_id: int, data: AdminUpdateRoleRequest, db: Session = Depends(get_db), user: User = Depends(require_roles(["ADMIN"]))):
+@router.post("/admin/users", status_code=201)
+def create_user(data: AdminCreateUserRequest, user: CurrentUser = Depends(require_roles(["ADMIN"]))):
+    # previously inserted into public.user table
+    # now: create user in Supabase Auth via Admin API (service role key required)
+    # this endpoint is kept as a placeholder — implement with supabase-py Admin client
     if data.role not in VALID_ROLES:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of {VALID_ROLES}")
-    target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found")
-    target.role = data.role
-    db.commit()
-    return {"id": target.id, "email": target.email, "role": target.role}
+    return {"message": "User creation must be done via Supabase Auth Admin API", "email": data.email, "role": data.role}
+
+@router.post("/admin/users/{user_uid}/role")
+def update_role(user_uid: str, data: AdminUpdateRoleRequest, user: CurrentUser = Depends(require_roles(["ADMIN"]))):
+    # previously updated public.user.role by integer user_id
+    # now: update raw_user_meta_data on Supabase auth.users via Admin API
+    if data.role not in VALID_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of {VALID_ROLES}")
+    return {"message": "Role update must be done via Supabase Auth Admin API", "supabase_uid": user_uid, "role": data.role}
 
 @router.get("/admin/users")
-def list_users(db: Session = Depends(get_db), user: User = Depends(require_roles(["ADMIN"]))):
-    users = db.query(User).all()
-    return [{"id": u.id, "email": u.email, "role": u.role, "supabase_uid": u.supabase_uid, "created_at": u.created_at} for u in users]
+def list_users(user: CurrentUser = Depends(require_roles(["ADMIN"]))):
+    # previously queried public.user table
+    # now: list users from Supabase Auth Admin API (service role key required)
+    return {"message": "User listing must be done via Supabase Auth Admin API"}

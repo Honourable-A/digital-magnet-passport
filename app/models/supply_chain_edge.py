@@ -6,6 +6,7 @@ class SupplyChainEdge(Base):
     __tablename__ = "supply_chain_edge"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    passport_id = Column(Integer, ForeignKey("passport.id"), nullable=True)
     source_company = Column(Integer, ForeignKey("company.id"), nullable=False)
     target_company = Column(Integer, ForeignKey("company.id"), nullable=False)
     relationship_type = Column(String(100), nullable=False)

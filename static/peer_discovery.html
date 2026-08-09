@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Peer Discovery — TRACE4MAGNET</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+    body { background: #0f0f0f; color: #ddd; min-height: 100vh; padding: 32px; }
+
+    .topbar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 32px; }
+    h1 { font-size: 13px; color: #555; letter-spacing: 3px; text-transform: uppercase; }
+    .topbar-right { font-size: 11px; color: #444; }
+    .topbar-right span { color: #777; margin-right: 16px; }
+    .topbar-right a { color: #444; cursor: pointer; text-decoration: none; }
+    .topbar-right a:hover { color: #aaa; }
+
+    .panel { background: #161616; border: 1px solid #1e1e1e; border-radius: 6px; padding: 24px; margin-bottom: 20px; }
+    .panel h2 { font-size: 11px; color: #444; letter-spacing: 2px; margin-bottom: 18px; }
+
+    .field-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+    label { font-size: 11px; color: #555; width: 90px; flex-shrink: 0; }
+    input {
+      background: #1a1a1a; border: 1px solid #2a2a2a; color: #ddd;
+      padding: 8px 12px; border-radius: 4px; font-size: 12px; font-family: monospace; flex: 1;
+    }
+    input:focus { outline: none; border-color: #444; }
+
+    button {
+      background: #1e1e1e; border: 1px solid #2e2e2e; color: #aaa;
+      padding: 8px 20px; border-radius: 4px; cursor: pointer;
+      font-size: 11px; font-family: monospace; letter-spacing: 1px;
+    }
+    button:hover { background: #252525; border-color: #444; color: #ddd; }
+    button:disabled { opacity: 0.3; cursor: default; }
+    button.green { border-color: #2a4a2a; color: #4caf50; }
+    button.green:hover { background: #1a2a1a; }
+
+    .msg {
+      font-size: 11px; padding: 8px 14px; border-radius: 4px;
+      background: #1a1a1a; border: 1px solid #222; margin-bottom: 14px; color: #555;
+    }
+    .msg.ok  { color: #4caf50; border-color: #1a3a1a; }
+    .msg.err { color: #ef5350; border-color: #3a1a1a; }
+
+    .row { display: flex; gap: 10px; margin-top: 14px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; font-size: 10px; color: #444; letter-spacing: 1px; padding: 8px 12px; border-bottom: 1px solid #1e1e1e; }
+    td { padding: 10px 12px; border-bottom: 1px solid #191919; color: #bbb; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1a1a1a; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; letter-spacing: 1px; }
+    .badge.MANUFACTURER { background: #1a2a3a; color: #64b5f6; }
+    .badge.RECYCLER     { background: #1a3a1a; color: #81c784; }
+    .badge.AUDITOR      { background: #3a2a1a; color: #ffb74d; }
+    .badge.REGULATOR    { background: #2a1a3a; color: #ce93d8; }
+    .badge.ADMIN        { background: #3a1a1a; color: #ef9a9a; }
+
+    .slots { font-size: 11px; color: #555; }
+    .slots.free { color: #4caf50; }
+    .empty { text-align: center; color: #333; padding: 32px; font-size: 12px; }
+    .tick { font-size: 10px; color: #333; float: right; padding-top: 1px; }
+
+    button.req { border-color: #2a3a2a; color: #81c784; }
+    button.req:hover { background: #1a2a1a; }
+    .queue-banner { font-size: 11px; color: #555; background: #161616; border: 1px solid #1e1e1e;
+      border-radius: 4px; padding: 10px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+    .queue-banner a { color: #64b5f6; cursor: pointer; text-decoration: none; letter-spacing: 1px; font-size: 11px; }
+    .queue-banner a:hover { color: #90caf9; }
+
+    #screen-login, #screen-app { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="screen-login">
+  <div class="topbar">
+    <h1>TRACE4MAGNET — P2P PEER DISCOVERY</h1>
+  </div>
+  <div class="panel">
+    <h2>LOGIN</h2>
+    <div id="login-msg" class="msg" style="display:none"></div>
+    <div class="field-row">
+      <label>email</label>
+      <input type="email" id="email" placeholder="manufacturer@test.com">
+    </div>
+    <div class="field-row">
+      <label>password</label>
+      <input type="password" id="password" placeholder="••••••••">
+    </div>
+    <div class="row">
+      <button id="btn-login" class="green">login</button>
+    </div>
+  </div>
+</div>
+
+<!-- App screen -->
+<div id="screen-app">
+  <div class="topbar">
+    <h1>TRACE4MAGNET — P2P PEER DISCOVERY</h1>
+    <div class="topbar-right">
+      <span id="info-email"></span>
+      <span class="badge" id="info-role-badge"></span>
+      &nbsp;&nbsp;
+      <a id="btn-logout">logout</a>
+    </div>
+  </div>
+
+  <div id="mfr-banner" class="queue-banner" style="display:none">
+    <span>You are online as a MANUFACTURER — incoming ZKP requests will appear in your queue.</span>
+    <a onclick="window.location.href='zkp_queue.html'">Open Verification Queue &rarr;</a>
+  </div>
+
+  <div class="panel">
+    <h2>AVAILABLE PEERS <span class="tick" id="tick"></span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID (EMAIL)</th><th>ROLE</th><th>IP ADDRESS</th><th>SESSIONS</th><th>ONLINE SINCE</th><th>ACTION</th>
+        </tr>
+      </thead>
+      <tbody id="peer-body">
+        <tr><td colspan="6" class="empty">loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://afqkalhppgloapvcqjrj.supabase.co";
+  const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmcWthbGhwcGdsb2FwdmNxanJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1OTEzNjgsImV4cCI6MjEwMTE2NzM2OH0.PCe8g0l5uupK8KLHWkdO9RL6DyZA1UFob9jJfBn_ZqY";
+  const API = "http://localhost:8000/api/v1";
+
+  let token = sessionStorage.getItem("t4m_token");
+  let myRole = sessionStorage.getItem("t4m_role") || "";
+  let refreshTimer = null;
+
+  function apiHeaders() {
+    return { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+  }
+
+  function showLogin() {
+    document.getElementById("screen-login").style.display = "block";
+    document.getElementById("screen-app").style.display = "none";
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  }
+
+  function showApp(email, role) {
+    document.getElementById("screen-login").style.display = "none";
+    document.getElementById("screen-app").style.display = "block";
+    document.getElementById("info-email").textContent = email;
+    const badge = document.getElementById("info-role-badge");
+    badge.textContent = role;
+    badge.className = "badge " + role;
+    myRole = role;
+    if (role === "MANUFACTURER") {
+      document.getElementById("mfr-banner").style.display = "flex";
+    }
+  }
+
+  function timeAgo(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso + "Z")) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  }
+
+  async function loadPeers() {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/p2p/peers`, { headers: apiHeaders() });
+      if (!res.ok) return;
+      const peers = await res.json();
+      const tbody = document.getElementById("peer-body");
+
+      if (peers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">no peers online right now</td></tr>`;
+      } else {
+        tbody.innerHTML = peers.map(p => {
+          const free = p.max_sessions - p.session_count;
+          let actionCell = `<td>—</td>`;
+          if (myRole === "RECYCLER" && p.role === "MANUFACTURER") {
+            actionCell = `<td><button type="button" class="req" onclick="requestVerification(${p.id}, '${p.supabase_uid}', '${p.name}', '${p.role}')" ${free === 0 ? "disabled title='at capacity'" : ""}>request verification</button></td>`;
+          }
+          return `
+            <tr>
+              <td>${p.name}</td>
+              <td><span class="badge ${p.role}">${p.role}</span></td>
+              <td>${p.ip_address || "—"}</td>
+              <td><span class="slots ${free > 0 ? 'free' : ''}">${p.session_count}/${p.max_sessions}</span></td>
+              <td>${timeAgo(p.connected_at)}</td>
+              ${actionCell}
+            </tr>`;
+        }).join("");
+      }
+
+      document.getElementById("tick").textContent = `last updated ${new Date().toLocaleTimeString()}`;
+    } catch (_) { /* keep last list on network error */ }
+  }
+
+  // -- Login --
+  document.getElementById("btn-login").onclick = async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const msgEl = document.getElementById("login-msg");
+
+    msgEl.style.display = "block";
+    msgEl.className = "msg";
+    msgEl.textContent = "logging in...";
+
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": ANON_KEY },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      msgEl.className = "msg err";
+      msgEl.textContent = data.error_description || data.msg || "login failed";
+      return;
+    }
+
+    token = data.access_token;
+    sessionStorage.setItem("t4m_token", token);
+    const role = data.user?.user_metadata?.role?.toUpperCase() || "UNKNOWN";
+    sessionStorage.setItem("t4m_email", data.user?.email || email);
+    sessionStorage.setItem("t4m_role", role);
+    sessionStorage.setItem("t4m_uid", data.user?.id || "");
+
+    showApp(data.user?.email || email, role);
+
+    // register this peer on the backend — store the returned peer_id for session tracking
+    try {
+      const regRes = await fetch(`${API}/p2p/register`, {
+        method: "POST", headers: apiHeaders(), body: JSON.stringify({})
+      });
+      if (regRes.ok) {
+        const regData = await regRes.json();
+        sessionStorage.setItem("t4m_peer_id", String(regData.peer_id || ""));
+      }
+    } catch (_) {}
+
+    // load immediately then every 10 seconds
+    await loadPeers();
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(loadPeers, 10000);
+  };
+
+  // -- Logout --
+  document.getElementById("btn-logout").onclick = async () => {
+    if (token) {
+      await fetch(`${API}/p2p/leave`, { method: "POST", headers: apiHeaders() }).catch(() => {});
+    }
+    token = null;
+    sessionStorage.removeItem("t4m_token");
+    sessionStorage.removeItem("t4m_email");
+    sessionStorage.removeItem("t4m_role");
+    sessionStorage.removeItem("t4m_uid");
+    sessionStorage.removeItem("t4m_peer_id");
+    sessionStorage.removeItem("t4m_target");
+    sessionStorage.removeItem("t4m_zkp_form");
+    showLogin();
+  };
+
+  async function requestVerification(peerId, peerUid, peerName, peerRole) {
+    const res = await fetch(`${API}/p2p/connect/${peerId}`, {
+      method: "POST", headers: apiHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.detail || "Could not reserve session — manufacturer may be at capacity.");
+      return;
+    }
+    sessionStorage.setItem("t4m_target", JSON.stringify({
+      id: peerId,
+      supabase_uid: peerUid,
+      name: peerName,
+      role: peerRole
+    }));
+    window.location.href = "zkp_request.html";
+  }
+
+  // restore session after page reload — token survives F5 via sessionStorage
+  if (token) {
+    const email = sessionStorage.getItem("t4m_email") || "";
+    const role  = sessionStorage.getItem("t4m_role")  || "UNKNOWN";
+    showApp(email, role);
+    loadPeers();
+    refreshTimer = setInterval(loadPeers, 10000);
+  } else {
+    showLogin();
+  }
+</script>
+</body>
+</html>

@@ -1,12 +1,20 @@
 .DS_Store
 
-zkp
+# ZKP — ignore node_modules, ptau, witness files, and compiled outputs; keep circuit source
+zkp/**/node_modules/
+zkp/**/*.ptau
+zkp/**/*.wtns
+zkp/**/outputs/
 
-# # ZKP — ignore large generated files and dependencies, keep source and compiled artifacts
-# /zkp/circom/
-# /zkp/**/node_modules/
-# /zkp/**/*.wtns
-# /zkp/**/inputs/*.ptau
+# Allow the circuit source files
+!zkp/
+!zkp/element_threshold/
+!zkp/element_threshold/circuits/
+!zkp/element_threshold/circuits/*.circom
+
+# Allow static ZKP browser artifacts
+!static/zkp/
+!static/zkp/**
 
 # Python
 __pycache__/

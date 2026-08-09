@@ -1,14 +1,10 @@
 import urllib.request
 import json
-# from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-# import bcrypt
-from sqlalchemy.orm import Session
 from app.config import settings
-from app.database import get_db
-from app.models.user import User
+from app.schemas.user import CurrentUser
 
 bearer = HTTPBearer()
 
@@ -49,35 +45,22 @@ def _decode_supabase_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="No matching JWK found")
     return jwt.decode(token, key, algorithms=["ES256"], options={"verify_aud": False})
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer), db: Session = Depends(get_db)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer)) -> CurrentUser:
     token = credentials.credentials
     try:
-        if settings.supabase_jwks_url:
-            payload = _decode_supabase_token(token)
-            uid = payload.get("sub")
-            email = payload.get("email")
-
-            # look up by supabase_uid first (stable), fall back to email for existing rows
-            user = db.query(User).filter(User.supabase_uid == uid).first()
-            if not user:
-                user = db.query(User).filter(User.email == email).first()
-                if user and uid and not user.supabase_uid:
-                    # bind the uid on first login so future lookups use it
-                    user.supabase_uid = uid
-                    db.commit()
-        # else:
-        #     # local jwt fallback
-        #     payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        #     user = db.query(User).filter(User.id == int(payload["sub"])).first()
-
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        return user
+        payload = _decode_supabase_token(token)
+        meta = payload.get("user_metadata") or {}
+        role = meta.get("role", "MANUFACTURER").upper()
+        return CurrentUser(
+            supabase_uid=payload.get("sub", ""),
+            email=payload.get("email", ""),
+            role=role
+        )
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def require_roles(roles: list):
-    def check(user: User = Depends(get_current_user)):
+    def check(user: CurrentUser = Depends(get_current_user)):
         if user.role not in roles:
             raise HTTPException(status_code=403, detail="Access denied")
         return user
