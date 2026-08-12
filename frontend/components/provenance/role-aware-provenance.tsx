@@ -1,8 +1,6 @@
 "use client";
 
 import { LockKeyhole } from "lucide-react";
-
-import { DemoRoleSelector } from "@/components/compliance/demo-role-selector";
 import { SupplyChainGraph } from "@/components/provenance/supply-chain-graph";
 import {
   Card,
@@ -48,7 +46,7 @@ export function RoleAwareProvenance() {
 
   return (
     <div className="space-y-6">
-      <DemoRoleSelector />
+  
 
       {canViewDetails ? (
         <SupplyChainGraph />

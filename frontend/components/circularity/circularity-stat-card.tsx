@@ -8,11 +8,13 @@ import {
 type CircularityStatCardProps = {
   title: string;
   value: string | number;
+  description?: string;
 };
 
 export function CircularityStatCard({
   title,
   value,
+  description,
 }: CircularityStatCardProps) {
   return (
     <Card>
@@ -24,6 +26,12 @@ export function CircularityStatCard({
 
       <CardContent>
         <p className="text-2xl font-semibold">{value}</p>
+
+        {description && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {description}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

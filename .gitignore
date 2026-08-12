@@ -29,3 +29,10 @@ ToDo.txt
 /sample_data
 seed.py
 *test*
+node_modules/
+.next/
+.env
+.env.local
+*.log
+.DS_Store
+
