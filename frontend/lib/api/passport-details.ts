@@ -99,139 +99,193 @@ export async function getPassportPerformance(
 
   return data ?? null;
 
-}
-// --------------------
+}// --------------------
 // Circularity / Sustainability
 // --------------------
+
 export async function getPassportCircularity(
-  id: number
-) {
+  id:number
+){
 
-  const supabase = createClient();
-
-
-  // 1. Get sustainability data
-
-  const {
-    data: sustainability,
-    error: sustainabilityError
-  } = await supabase
-    .from("passport_sustainability")
-    .select(
-      `
-      recycled_content,
-      carbon_footprint,
-      radioactivity,
-      conflict_mineral_status
-      `
-    )
-    .eq(
-      "passport_id",
-      id
-    )
-    .maybeSingle();
+const supabase=createClient();
 
 
+// Sustainability data
 
-  console.log(
-    "SUSTAINABILITY RESULT:",
-    sustainability
-  );
-
-
-  console.log(
-    "SUSTAINABILITY ERROR:",
-    sustainabilityError
-  );
+const {
+data:sustainability,
+error:sustainabilityError
+}=await supabase
+.from("passport_sustainability")
+.select(
+`
+recycled_content,
+carbon_footprint,
+radioactivity,
+conflict_mineral_status
+`
+)
+.eq(
+"passport_id",
+id
+)
+.maybeSingle();
 
 
 
-  if(sustainabilityError){
+if(sustainabilityError){
 
-    throw sustainabilityError;
-
-  }
-
-
-
-
-  // 2. Get passport lineage data
-
-  const {
-    data: lineage,
-    error: lineageError
-  } = await supabase
-    .from("passport_lineage")
-    .select(
-      `
-      id,
-      source_passport_id,
-      target_passport_id,
-      relationship_type,
-      recovery_method,
-      generation_number,
-
-      source_passport:source_passport_id(
-        passport_id
-      ),
-
-      target_passport:target_passport_id(
-        passport_id
-      )
-      `
-    )
-    .or(
-      `source_passport_id.eq.${id},target_passport_id.eq.${id}`
-    );
-
-
-
-  console.log(
-    "LINEAGE RESULT:",
-    lineage
-  );
-
-
-  console.log(
-    "LINEAGE ERROR:",
-    lineageError
-  );
-
-
-
-  if(lineageError){
-
-    throw lineageError;
-
-  }
-
-
-
-  return {
-
-    recycled_content:
-      sustainability?.recycled_content ?? null,
-
-
-    carbon_footprint:
-      sustainability?.carbon_footprint ?? null,
-
-
-    radioactivity:
-      sustainability?.radioactivity ?? null,
-
-
-    conflict_mineral_status:
-      sustainability?.conflict_mineral_status ?? null,
-
-
-    lineage:
-      lineage ?? []
-
-  };
+throw sustainabilityError;
 
 }
 
+
+
+// Passport lineage
+
+const {
+data:lineage,
+error:lineageError
+}=await supabase
+.from("passport_lineage")
+.select(
+`
+id,
+source_passport_id,
+target_passport_id,
+relationship_type,
+recovery_method,
+generation_number,
+
+source_passport:source_passport_id(
+passport_id
+),
+
+target_passport:target_passport_id(
+passport_id
+)
+`
+)
+.or(
+`source_passport_id.eq.${id},target_passport_id.eq.${id}`
+);
+
+
+
+if(lineageError){
+
+throw lineageError;
+
+}
+
+
+
+// Recycled material passport
+
+const {
+data:recycledMaterial,
+error:materialError
+}=await supabase
+.from("recycled_material_passport")
+.select(
+`
+id,
+source_passport_id,
+material_type,
+quantity,
+created_at
+`
+)
+.eq(
+"source_passport_id",
+id
+)
+.order(
+"created_at",
+{
+ascending:false
+}
+);
+
+
+
+if(materialError){
+
+throw materialError;
+
+}
+
+
+
+// Lifecycle events
+
+const {
+data:events,
+error:eventError
+}=await supabase
+.from("passport_event")
+.select(
+`
+id,
+event_type,
+event_date,
+notes,
+performed_by
+`
+)
+.eq(
+"passport_id",
+id
+)
+.order(
+"event_date",
+{
+ascending:true
+}
+);
+
+
+
+if(eventError){
+
+throw eventError;
+
+}
+
+
+
+return {
+
+recycled_content:
+sustainability?.recycled_content ?? null,
+
+
+carbon_footprint:
+sustainability?.carbon_footprint ?? null,
+
+
+radioactivity:
+sustainability?.radioactivity ?? null,
+
+
+conflict_mineral_status:
+sustainability?.conflict_mineral_status ?? null,
+
+
+lineage:
+lineage ?? [],
+
+
+recycled_material:
+recycledMaterial ?? [],
+
+
+events:
+events ?? []
+
+};
+
+}
 // --------------------
 // Compliance
 // --------------------
@@ -409,133 +463,126 @@ export async function getPassportLineage(
 // --------------------
 // Circularity Dashboard
 // --------------------
-
 export async function getCircularityDashboard(
-  passportId:number
+passportId:number
 ){
 
-  const supabase = createClient();
+const supabase=createClient();
+
+
+const {
+data:sustainability,
+error:sustainabilityError
+}=await supabase
+.from("passport_sustainability")
+.select("*")
+.eq(
+"passport_id",
+passportId
+)
+.maybeSingle();
+
+
+if(sustainabilityError)
+throw sustainabilityError;
 
 
 
-  const {
-    data:sustainability,
-    error:sustainabilityError
-  } = await supabase
-    .from("passport_sustainability")
-    .select("*")
-    .eq(
-      "passport_id",
-      passportId
-    )
-    .maybeSingle();
-
-
-
-  console.log(
-    "SUSTAINABILITY:",
-    sustainability
-  );
-
-
-  console.log(
-    "SUSTAINABILITY ERROR:",
-    sustainabilityError
-  );
-
-
-
-
-  const {
-    data:lineage,
-    error:lineageError
-  } = await supabase
-    .from("passport_lineage")
-    .select(
+const {
+data:lineage,
+error:lineageError
+}=await supabase
+.from("passport_lineage")
+.select(
 `
-      id,
-      relationship_type,
-      recovery_method,
-      generation_number,
+id,
+relationship_type,
+recovery_method,
+generation_number,
 
-      source_passport:passport!passport_lineage_source_passport_id_fkey(
-        id,
-        passport_id
-      ),
+source_passport:passport!passport_lineage_source_passport_id_fkey(
+id,
+passport_id
+),
 
-      target_passport:passport!passport_lineage_target_passport_id_fkey(
-        id,
-        passport_id
-      )
+target_passport:passport!passport_lineage_target_passport_id_fkey(
+id,
+passport_id
+)
 `
-    )
-    .eq(
-      "target_passport_id",
-      passportId
-    );
+)
+.or(
+`source_passport_id.eq.${passportId},target_passport_id.eq.${passportId}`
+);
+
+
+if(lineageError)
+throw lineageError;
 
 
 
-  console.log(
-    "LINEAGE:",
-    lineage
-  );
+const {
+data:events,
+error:eventError
+}=await supabase
+.from("passport_event")
+.select("*")
+.eq(
+"passport_id",
+passportId
+)
+.order(
+"event_date",
+{
+ascending:true
+}
+);
 
 
-  console.log(
-    "LINEAGE ERROR:",
-    lineageError
-  );
-
-
-
-
-  const {
-    data:events,
-    error:eventError
-  } = await supabase
-    .from("passport_event")
-    .select("*")
-    .eq(
-      "passport_id",
-      passportId
-    )
-    .order(
-      "event_date",
-      {
-        ascending:true
-      }
-    );
+if(eventError)
+throw eventError;
 
 
 
-  console.log(
-    "EVENTS:",
-    events
-  );
+const {
+data:recycledMaterial,
+error:materialError
+}=await supabase
+.from("recycled_material_passport")
+.select(
+`
+id,
+source_passport_id,
+material_type,
+quantity,
+created_at
+`
+)
+.eq(
+"source_passport_id",
+passportId
+);
 
 
-  console.log(
-    "EVENT ERROR:",
-    eventError
-  );
+if(materialError)
+throw materialError;
 
 
 
+return {
 
-  return {
+sustainability:
+sustainability ?? null,
 
-    sustainability:
-      sustainability ?? null,
+lineage:
+lineage ?? [],
 
+events:
+events ?? [],
 
-    lineage:
-      lineage ?? [],
+recycled_material:
+recycledMaterial ?? []
 
-
-    events:
-      events ?? []
-
-  };
+};
 
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRoleStore } from "@/store/role-store";
+import { Factory } from "lucide-react";
 
 import {
   Bot,
@@ -99,6 +100,16 @@ const navigation = [
       "Admin",
     ],
   },
+
+        
+  {
+      name:"Recycling",
+      href:"/recycling",
+      icon:Factory,
+      roles:[
+      "Recycler"
+      ]
+      },
 
   {
     name: "Blockchain",

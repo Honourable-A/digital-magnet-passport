@@ -5,16 +5,13 @@ import {
   useState,
 } from "react";
 
-
 import {
   getPassportCircularity
 } from "@/lib/api/passport-details";
 
-
 import Timeline from "@/components/circularity/timeline";
-
 import PassportLineage from "@/components/circularity/passport-lineage";
-
+import RecycledMaterials from "@/components/circularity/recycled-materials";
 
 
 interface CircularityData {
@@ -29,257 +26,253 @@ interface CircularityData {
 
   lineage?: any[];
 
+  recycled_material?: any[];
+
+  events?: any[];
+
 }
 
 
 
 export default function Circularity({
   passportId,
-}: {
+}:{
   passportId:number;
 }) {
 
 
-  const [
-    data,
-    setData
-  ] = useState<CircularityData | null>(null);
+const [data,setData] =
+useState<CircularityData|null>(null);
 
 
+const [loading,setLoading] =
+useState(true);
 
-  const [
-    loading,
-    setLoading
-  ] = useState(true);
 
 
+useEffect(()=>{
 
-  useEffect(()=>{
+async function loadCircularity(){
 
+try{
 
-    async function loadCircularity(){
+const result =
+await getPassportCircularity(
+passportId
+);
 
 
-      try{
+console.log(
+"CIRCULARITY DATA:",
+result
+);
 
 
-        const result =
-          await getPassportCircularity(
-            passportId
-          );
+setData(result);
 
 
-        console.log(
-          "CIRCULARITY DATA:",
-          result
-        );
+}
+catch(error){
 
+console.error(
+"CIRCULARITY ERROR:",
+error
+);
 
-        setData(result);
 
+setData(null);
 
-      }
-      catch(error){
+}
+finally{
 
+setLoading(false);
 
-        console.error(
-          "CIRCULARITY ERROR:",
-          error
-        );
+}
 
+}
 
-        setData(null);
 
+loadCircularity();
 
-      }
-      finally{
 
+},[passportId]);
 
-        setLoading(false);
 
 
-      }
+if(loading){
 
+return (
 
-    }
+<p className="text-sm text-muted-foreground">
+Loading circularity data...
+</p>
 
+);
 
-    loadCircularity();
+}
 
 
-  },[passportId]);
 
+const lineage =
+data?.lineage ?? [];
 
 
+const generation =
+lineage.length > 0
+?
+lineage[0]?.generation_number
+:
+null;
 
-  if(loading){
 
-    return (
 
-      <p className="text-sm text-muted-foreground">
-        Loading circularity data...
-      </p>
+return (
 
-    );
+<div className="space-y-6">
 
-  }
 
+{/* Summary */}
 
+<div className="grid gap-4 md:grid-cols-3">
 
-  const lineage =
-    data?.lineage ?? [];
 
+<div className="rounded-lg border p-4">
 
+<p className="text-sm text-muted-foreground">
+Recycled Content
+</p>
 
-  const generation =
-    lineage.length > 0
-      ? lineage[0]?.generation_number
-      : null;
+<p className="mt-2 text-2xl font-semibold">
 
+{
+data?.recycled_content !== null &&
+data?.recycled_content !== undefined
+?
+`${data.recycled_content}%`
+:
+"Not available"
+}
 
+</p>
 
+</div>
 
-  return (
 
-    <div className="space-y-6">
 
 
+<div className="rounded-lg border p-4">
 
-      {/* Circularity Summary */}
+<p className="text-sm text-muted-foreground">
+Carbon Footprint
+</p>
 
-      <div className="grid gap-4 md:grid-cols-3">
 
+<p className="mt-2 text-2xl font-semibold">
 
-        <div className="rounded-lg border p-4">
+{
+data?.carbon_footprint !== null &&
+data?.carbon_footprint !== undefined
+?
+`${data.carbon_footprint} kg CO₂e`
+:
+"Not available"
+}
 
-          <p className="text-sm text-muted-foreground">
-            Recycled Content
-          </p>
+</p>
 
+</div>
 
-          <p className="mt-2 text-2xl font-semibold">
 
-            {
-              data?.recycled_content !== null &&
-              data?.recycled_content !== undefined
 
-              ? `${data.recycled_content}%`
 
-              : "Not available"
-            }
+<div className="rounded-lg border p-4">
 
-          </p>
+<p className="text-sm text-muted-foreground">
+Generation Number
+</p>
 
 
-        </div>
+<p className="mt-2 text-2xl font-semibold">
 
+{
+generation ??
+"Not available"
+}
 
+</p>
 
+</div>
 
 
-        <div className="rounded-lg border p-4">
+</div>
 
 
-          <p className="text-sm text-muted-foreground">
-            Carbon Footprint
-          </p>
 
 
-          <p className="mt-2 text-2xl font-semibold">
 
-            {
-              data?.carbon_footprint !== null &&
-              data?.carbon_footprint !== undefined
+{/* Lifecycle */}
 
-              ? `${data.carbon_footprint} kg CO₂e`
+<div className="rounded-lg border p-6">
 
-              : "Not available"
-            }
 
-          </p>
+<h3 className="mb-4 font-semibold">
+Circularity Lifecycle
+</h3>
 
 
-        </div>
+<Timeline
+passportId={passportId}
+/>
 
 
+</div>
 
 
 
-        <div className="rounded-lg border p-4">
 
 
-          <p className="text-sm text-muted-foreground">
-            Generation Number
-          </p>
+{/* Recycler Output */}
 
+<div className="rounded-lg border p-6">
 
-          <p className="mt-2 text-2xl font-semibold">
 
-            {
-              generation ??
-              "Not available"
-            }
+<h3 className="mb-4 font-semibold">
+Recycled Material Passport
+</h3>
 
-          </p>
 
+<RecycledMaterials
+passportId={passportId}
+/>
 
-        </div>
 
+</div>
 
-      </div>
 
 
 
 
+{/* Lineage */}
 
+<div className="rounded-lg border p-6">
 
-      {/* Lifecycle */}
 
-      <div className="rounded-lg border p-6">
+<h3 className="mb-4 font-semibold">
+Passport Lineage
+</h3>
 
 
-        <h3 className="mb-4 font-semibold">
-          Circularity Lifecycle
-        </h3>
+<PassportLineage
+data={lineage}
+/>
 
 
+</div>
 
-        <Timeline
-          passportId={passportId}
-        />
 
 
-      </div>
+</div>
 
-
-
-
-
-
-
-      {/* Passport Lineage */}
-
-      <div className="rounded-lg border p-6">
-
-
-        <h3 className="mb-4 font-semibold">
-          Passport Lineage
-        </h3>
-
-
-
-        <PassportLineage
-          data={lineage}
-        />
-
-
-      </div>
-
-
-
-    </div>
-
-  );
-
+);
 
 }

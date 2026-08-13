@@ -19,6 +19,7 @@ const rolePermissions = {
     "/passport",
     "/circularity",
     "/provenance",
+    "/recycling",
     "/assistant",
   ],
 
@@ -237,6 +238,8 @@ matcher:[
 "/blockchain/:path*",
 
 "/assistant/:path*",
+
+"/recycling/:path*",
 
 ]
 
