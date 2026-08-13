@@ -31,7 +31,7 @@ class RelationshipCreate(BaseModel):
 
 class LedgerSubmit(BaseModel):
     passport_id: str
-    recycler_uid: str
+    recycler_uid: str   # resolved to peer_session.id server-side
     element: str
     operator: str
     threshold: float
@@ -108,13 +108,21 @@ def _assert_authorized(manufacturer_uid: str, recycler_uid: str, db: Session):
 
 # ── Ledger ───────────────────────────────────────────────────────────────────
 
+def _resolve_peer_id(uid: str, db: Session) -> int:
+    peer = db.query(PeerSession).filter_by(supabase_uid=uid).order_by(PeerSession.id.desc()).first()
+    if not peer:
+        raise HTTPException(status_code=404, detail=f"Peer not registered: {uid[:8]}")
+    return peer.id
+
 @router.post("/ledger", status_code=201)
 def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: CurrentUser = Depends(require_roles(["MANUFACTURER"]))):
-    _assert_authorized(user.supabase_uid, data.recycler_uid, db)
+    # _assert_authorized(user.supabase_uid, data.recycler_uid, db)
+    mfr_id = _resolve_peer_id(user.supabase_uid, db)
+    rec_id  = _resolve_peer_id(data.recycler_uid, db)
     entry = LedgerEntry(
         passport_id=data.passport_id,
-        manufacturer_uid=user.supabase_uid,
-        recycler_uid=data.recycler_uid,
+        manufacturer_id=mfr_id,
+        recycler_id=rec_id,
         element=data.element,
         operator=data.operator,
         threshold=data.threshold,
@@ -138,11 +146,13 @@ def get_ledger_entry(
 ):
     q = db.query(LedgerEntry).filter(LedgerEntry.passport_id == passport_id)
     if manufacturer_uid:
-        q = q.filter(LedgerEntry.manufacturer_uid == manufacturer_uid)
+        peer = db.query(PeerSession).filter_by(supabase_uid=manufacturer_uid).order_by(PeerSession.id.desc()).first()
+        if peer:
+            q = q.filter(LedgerEntry.manufacturer_id == peer.id)
     entries = q.order_by(LedgerEntry.submitted_at.desc()).all()
     return [{
         "id": e.id, "passport_id": e.passport_id,
-        "manufacturer_uid": e.manufacturer_uid, "recycler_uid": e.recycler_uid,
+        "manufacturer_id": e.manufacturer_id, "recycler_id": e.recycler_id,
         "element": e.element, "operator": e.operator, "threshold": e.threshold,
         "commitment": e.commitment,
         "payload_1": e.payload_1, "payload_2": e.payload_2,
@@ -156,7 +166,7 @@ def list_ledger(db: Session = Depends(get_db), user: CurrentUser = Depends(requi
     entries = db.query(LedgerEntry).order_by(LedgerEntry.submitted_at.desc()).limit(200).all()
     return [{
         "id": e.id, "passport_id": e.passport_id,
-        "manufacturer_uid": e.manufacturer_uid, "recycler_uid": e.recycler_uid,
+        "manufacturer_id": e.manufacturer_id, "recycler_id": e.recycler_id,
         "element": e.element, "operator": e.operator, "threshold": e.threshold,
         "commitment": e.commitment, "tampered": e.tampered, "submitted_at": e.submitted_at
     } for e in entries]
@@ -166,7 +176,8 @@ def flag_tamper(entry_id: int, db: Session = Depends(get_db), user: CurrentUser 
     entry = db.query(LedgerEntry).filter_by(id=entry_id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Ledger entry not found")
-    if entry.recycler_uid != user.supabase_uid:
+    my_peer = db.query(PeerSession).filter_by(supabase_uid=user.supabase_uid).order_by(PeerSession.id.desc()).first()
+    if not my_peer or entry.recycler_id != my_peer.id:
         raise HTTPException(status_code=403, detail="Not your ledger entry")
     entry.tampered = True
     db.commit()

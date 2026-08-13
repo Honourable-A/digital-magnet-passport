@@ -8,8 +8,8 @@ class LedgerEntry(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     passport_id = Column(String(100), nullable=False)
-    manufacturer_uid = Column(String(36), nullable=False)
-    recycler_uid = Column(String(36), nullable=False)
+    manufacturer_id = Column(Integer, nullable=False)   # peer_session.id
+    recycler_id = Column(Integer, nullable=False)        # peer_session.id
     element = Column(String(10), nullable=False)
     operator = Column(String(5), nullable=False)    # gt / lt
     threshold = Column(Float, nullable=False)
