@@ -8,131 +8,86 @@
   <script src="/static/snarkjs.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --background:          #ffffff;
-      --foreground:          #09090b;
-      --card:                #ffffff;
-      --primary:             #18181b;
-      --primary-foreground:  #fafafa;
-      --secondary:           #f4f4f5;
-      --secondary-foreground:#18181b;
-      --muted:               #f4f4f5;
-      --muted-foreground:    #71717a;
-      --border:              #e4e4e7;
-      --input:               #e4e4e7;
-      --ring:                #a1a1aa;
-      --destructive:         #dc2626;
-      --radius-sm:  6px;
-      --radius-md:  8px;
-      --radius-lg:  10px;
-      --radius-xl:  14px;
-      --radius-4xl: 26px;
+      --background: #ffffff; --foreground: #09090b; --card: #ffffff;
+      --primary: #18181b; --primary-foreground: #fafafa;
+      --secondary: #f4f4f5; --secondary-foreground: #18181b;
+      --muted: #f4f4f5; --muted-foreground: #71717a;
+      --border: #e4e4e7; --input: #e4e4e7; --ring: #a1a1aa;
+      --destructive: #dc2626;
+      --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px;
+      --radius-xl: 14px; --radius-4xl: 26px;
     }
-
     body { font-family: 'Inter', system-ui, sans-serif; background: var(--background); color: var(--foreground); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
-
-    /* Header */
     .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
-    .brand  { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
     .brand span { color: var(--muted-foreground); font-weight: 400; }
     .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted-foreground); }
     .back-link { font-size: 13px; color: var(--muted-foreground); text-decoration: none; font-weight: 500; cursor: pointer; }
     .back-link:hover { color: var(--foreground); }
-
-    /* Layout */
     main { padding: 32px 24px; max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
     h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.025em; }
     .page-desc { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; }
-
-    /* Card */
     .card { background: var(--card); border-radius: var(--radius-xl); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); padding: 24px; }
-    .card + .card { /* no extra margin needed, gap handles it */ }
-    .card-header { margin-bottom: 20px; }
-    .card-title  { font-size: 15px; font-weight: 500; }
-    .card-desc   { font-size: 13px; color: var(--muted-foreground); margin-top: 3px; }
-
-    /* Status bar */
+    .card-title { font-size: 15px; font-weight: 500; }
+    .card-desc { font-size: 13px; color: var(--muted-foreground); margin-top: 3px; }
     .status { display: flex; align-items: center; gap: 8px; border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
     .status .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .status-info    { background: #eff6ff; color: #1d4ed8; }
-    .status-info    .dot { background: #3b82f6; }
-    .status-ok      { background: #f0fdf4; color: #15803d; }
-    .status-ok      .dot { background: #22c55e; }
-    .status-warn    { background: #fffbeb; color: #92400e; }
-    .status-warn    .dot { background: #f59e0b; }
-    .status-err     { background: rgba(220,38,38,0.06); color: #b91c1c; }
-    .status-err     .dot { background: var(--destructive); }
-    .status-neutral { background: var(--muted); color: var(--muted-foreground); }
-    .status-neutral .dot { background: var(--muted-foreground); }
-
-    /* Info rows */
+    .status-info    { background: #eff6ff; color: #1d4ed8; } .status-info    .dot { background: #3b82f6; }
+    .status-ok      { background: #f0fdf4; color: #15803d; } .status-ok      .dot { background: #22c55e; }
+    .status-warn    { background: #fffbeb; color: #92400e; } .status-warn    .dot { background: #f59e0b; }
+    .status-err     { background: rgba(220,38,38,0.06); color: #b91c1c; } .status-err     .dot { background: var(--destructive); }
+    .status-neutral { background: var(--muted); color: var(--muted-foreground); } .status-neutral .dot { background: var(--muted-foreground); }
     .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
     .info-row:last-child { border-bottom: none; padding-bottom: 0; }
     .info-row:first-child { padding-top: 0; }
     .info-label { color: var(--muted-foreground); }
     .info-value { font-weight: 500; }
-    .info-value.mono { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; }
-
-    /* Form fields */
+    .info-value.mono { font-family: ui-monospace, monospace; font-size: 11px; }
     .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-    label  { font-size: 13px; font-weight: 500; }
-    .input { height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--background); padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--foreground); outline: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: border-color 120ms, box-shadow 120ms; }
-    .input::placeholder { color: var(--muted-foreground); }
+    label { font-size: 13px; font-weight: 500; }
+    .input { height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--background); padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--foreground); outline: none; transition: border-color 120ms, box-shadow 120ms; }
     .input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(161,161,170,0.25); }
-    .input[readonly] { background: var(--muted); color: var(--muted-foreground); cursor: default; }
-    .input[readonly]:focus { border-color: var(--input); box-shadow: none; }
-
-    /* Buttons */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; height: 36px; padding: 0 16px; border: 1px solid transparent; cursor: pointer; transition: all 120ms; font-family: inherit; white-space: nowrap; }
     .btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
-    .btn-primary { background: var(--primary); color: var(--primary-foreground); }
-    .btn-primary:hover { opacity: 0.85; }
-    .btn-outline { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-    .btn-outline:hover { background: var(--muted); }
-    .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); border-color: var(--border); }
-    .btn-secondary:hover { background: #ebebec; }
-
-    /* Result box */
-    .result-card { border-radius: var(--radius-lg); padding: 20px; margin-top: 4px; }
-    .result-pass    { background: #f0fdf4; border: 1px solid #bbf7d0; }
-    .result-fail    { background: #fef2f2; border: 1px solid #fecaca; }
-    .result-invalid { background: #fffbeb; border: 1px solid #fde68a; }
-    .result-headline { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-    .result-pass    .result-headline { color: #15803d; }
-    .result-fail    .result-headline { color: #b91c1c; }
-    .result-invalid .result-headline { color: #92400e; }
-    .result-detail  { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
-    .proof-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--radius-4xl); }
-    .proof-tag-ok  { background: #dcfce7; color: #15803d; }
-    .proof-tag-bad { background: #fee2e2; color: #b91c1c; }
-
-    /* Session card (manufacturer) */
-    .session-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
-    .session-card:last-child { margin-bottom: 0; }
-    .session-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .session-peer   { font-size: 14px; font-weight: 500; }
-    .session-peer span { color: var(--muted-foreground); font-weight: 400; font-size: 12px; margin-left: 8px; }
-
-    .section-divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .btn-primary { background: var(--primary); color: var(--primary-foreground); } .btn-primary:hover { opacity: 0.85; }
+    .btn-outline { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.04); } .btn-outline:hover { background: var(--muted); }
+    .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); border-color: var(--border); } .btn-secondary:hover { background: #ebebec; }
     .btn-row { display: flex; gap: 10px; margin-top: 16px; }
-
-    /* Proof animation */
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .badge { display: inline-flex; align-items: center; height: 20px; border-radius: var(--radius-4xl); padding: 0 8px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
+    .badge.MANUFACTURER { background: #18181b; color: #fafafa; }
+    .badge.RECYCLER     { background: #f4f4f5; color: #18181b; border-color: #e4e4e7; }
+    .rtc-tag { font-size: 11px; color: #15803d; font-weight: 500; }
     .proof-anim { display: none; font-size: 12px; color: var(--muted-foreground); margin-top: 10px; align-items: center; gap: 8px; }
     .proof-anim.visible { display: flex; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--muted-foreground); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-
-    /* Empty state */
     .empty-state { text-align: center; padding: 48px 24px; color: var(--muted-foreground); font-size: 13px; }
-
-    /* Badge */
-    .badge { display: inline-flex; align-items: center; height: 20px; border-radius: var(--radius-4xl); padding: 0 8px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
-    .badge.MANUFACTURER { background: #18181b; color: #fafafa; }
-    .badge.RECYCLER     { background: #f4f4f5; color: #18181b; border-color: #e4e4e7; }
-
-    .rtc-tag { font-size: 11px; color: #15803d; font-weight: 500; }
-
+    .session-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+    .session-card:last-child { margin-bottom: 0; }
+    .session-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .session-peer { font-size: 14px; font-weight: 500; }
+    .session-peer span { color: var(--muted-foreground); font-weight: 400; font-size: 12px; margin-left: 8px; }
+    .result-card { border-radius: var(--radius-lg); padding: 20px; margin-top: 16px; }
+    .result-pass    { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .result-fail    { background: #fef2f2; border: 1px solid #fecaca; }
+    .result-invalid { background: #fffbeb; border: 1px solid #fde68a; }
+    .result-headline { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .result-pass .result-headline { color: #15803d; }
+    .result-fail .result-headline { color: #b91c1c; }
+    .result-invalid .result-headline { color: #92400e; }
+    .result-detail { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
+    .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .check-row:last-child { border-bottom: none; }
+    .check-label { color: var(--muted-foreground); flex: 1; }
+    .check-pass { color: #15803d; font-weight: 500; } .check-fail { color: #b91c1c; font-weight: 500; }
+    .check-na { color: var(--muted-foreground); font-weight: 500; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { display: inline-flex; align-items: center; height: 22px; border-radius: var(--radius-4xl); padding: 0 10px; font-size: 11px; font-weight: 500; }
+    .tag-green { background: #dcfce7; color: #15803d; }
+    .tag-blue  { background: #dbeafe; color: #1d4ed8; }
+    .tag-amber { background: #fef3c7; color: #92400e; }
     #view-recycler, #view-manufacturer { display: none; }
   </style>
 </head>
@@ -152,23 +107,25 @@
   <main>
     <div>
       <h1>Verification request</h1>
-      <p class="page-desc">Your request has been sent. The manufacturer is generating a ZK proof in their browser.</p>
+      <p class="page-desc">WebRTC P2P channel — all cryptographic operations happen in your browser.</p>
     </div>
-
     <div class="card">
       <div id="rec-status" class="status status-info"><div class="dot"></div><span id="rec-status-text">Connecting...</span></div>
-
-      <div class="card-header" style="margin-bottom:16px">
-        <p class="card-title">Request details</p>
-      </div>
-
+      <div class="card-title" style="margin-bottom:16px">Request details</div>
       <div class="info-row"><span class="info-label">Target peer</span><span class="info-value" id="rec-target">—</span></div>
       <div class="info-row"><span class="info-label">Passport</span><span class="info-value mono">DMP-TEST-001</span></div>
       <div class="info-row"><span class="info-label">Element</span><span class="info-value" id="rec-element">—</span></div>
       <div class="info-row"><span class="info-label">Condition</span><span class="info-value" id="rec-condition">—</span></div>
       <div class="info-row"><span class="info-label">Threshold</span><span class="info-value" id="rec-threshold">—</span></div>
 
-      <div id="rec-result" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid var(--border)"></div>
+      <div id="rec-result" style="display:none"></div>
+
+      <div id="rec-ledger-section" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid var(--border)">
+        <div class="card-title" style="margin-bottom:12px">Phase 4 — Ledger consistency</div>
+        <p style="font-size:13px; color:var(--muted-foreground); margin-bottom:12px">Verify the Manufacturer submitted consistent data to the auditor ledger.</p>
+        <button class="btn btn-outline" id="btn-rec-ledger" onclick="verifyOnLedger()">Check ledger</button>
+        <div id="rec-ledger-result" style="margin-top:12px"></div>
+      </div>
 
       <div class="btn-row" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border)">
         <button class="btn btn-outline" id="btn-rec-done" style="display:none" onclick="recyclerDone()">Close session</button>
@@ -182,9 +139,8 @@
   <main>
     <div>
       <h1>Verification queue</h1>
-      <p class="page-desc">Incoming ZKP requests from recyclers. Proofs are generated in your browser — values are never transmitted.</p>
+      <p class="page-desc">Incoming ZKP requests. Proofs are generated in your browser — raw values never leave your machine.</p>
     </div>
-
     <div class="card">
       <div id="mfr-status" class="status status-neutral"><div class="dot"></div><span id="mfr-status-text">Listening for connections...</span></div>
       <div id="standing-by" class="empty-state">No active requests. Standing by.</div>
@@ -194,398 +150,527 @@
 </div>
 
 <script>
-  const API      = "http://localhost:8000/api/v1";
-  const WS_BASE  = "ws://localhost:8000/ws/signal";
-  const ICE_CFG  = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+const API     = "http://localhost:8000/api/v1";
+const WS_BASE = "ws://localhost:8000/ws/signal";
+const ICE_CFG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  const token   = sessionStorage.getItem("t4m_token");
-  const myEmail = sessionStorage.getItem("t4m_email") || "";
-  const myRole  = sessionStorage.getItem("t4m_role")  || "";
-  const myUid   = sessionStorage.getItem("t4m_uid")   || "";
+const token   = sessionStorage.getItem("t4m_token");
+const myEmail = sessionStorage.getItem("t4m_email") || "";
+const myRole  = sessionStorage.getItem("t4m_role")  || "";
+const myUid   = sessionStorage.getItem("t4m_uid")   || "";
 
-  if (!token || !myUid) { window.location.href = "peer_discovery.html"; }
+if (!token || !myUid) window.location.href = "peer_discovery.html";
 
-  document.getElementById("info-email").textContent = myEmail;
-  const roleBadge = document.getElementById("info-role-badge");
-  roleBadge.textContent = myRole;
-  roleBadge.className   = "badge " + myRole;
+document.getElementById("info-email").textContent = myEmail;
+const roleBadge = document.getElementById("info-role-badge");
+roleBadge.textContent = myRole;
+roleBadge.className   = "badge " + myRole;
 
-  function apiHeaders() {
-    return { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
-  }
+function apiHeaders() { return {"Content-Type":"application/json","Authorization":`Bearer ${token}`}; }
 
-  // ── RECYCLER ────────────────────────────────────────────────
-  let recyclerDc = null;
+// ── crypto helpers ────────────────────────────────────────────────────────────
 
-  async function initRecycler() {
-    document.getElementById("view-recycler").style.display = "block";
+function modpow(b, e, m) {
+  if (m === 1n) return 0n;
+  let r = 1n; b = b % m;
+  while (e > 0n) { if (e & 1n) r = r * b % m; e >>= 1n; b = b * b % m; }
+  return r;
+}
 
-    const target = JSON.parse(sessionStorage.getItem("t4m_target")   || "null");
-    const form   = JSON.parse(sessionStorage.getItem("t4m_zkp_form") || "null");
+function paillierEncrypt(plaintext, n_hex) {
+  const n = BigInt('0x' + n_hex), n2 = n * n;
+  const gm = (1n + BigInt(plaintext) * n) % n2;
+  const bytes = new Uint8Array(Math.ceil(n_hex.length / 2));
+  crypto.getRandomValues(bytes);
+  let r = (BigInt('0x' + Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('')) % (n - 2n)) + 2n;
+  return ((gm * modpow(r, n, n2)) % n2).toString(10);
+}
 
-    if (!target || !form) {
-      setRecStatus("Missing session data — go back and try again.", "err");
-      return;
-    }
+function randomSalt() {
+  const b = crypto.getRandomValues(new Uint8Array(31));
+  return BigInt('0x' + Array.from(b, x => x.toString(16).padStart(2,'0')).join('')).toString(10);
+}
 
-    const opLabel = { gt: "Greater than (>)", lt: "Less than (<)" };
-    document.getElementById("rec-target").textContent    = target.name;
-    document.getElementById("rec-element").textContent   = form.element;
-    document.getElementById("rec-condition").textContent = opLabel[form.operator] || form.operator;
-    document.getElementById("rec-threshold").textContent = form.threshold + "%";
+async function generateECDH() {
+  return crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"}, true, ["deriveKey"]);
+}
+async function exportECDHPub(kp) {
+  const raw = await crypto.subtle.exportKey("raw", kp.publicKey);
+  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+}
+async function deriveSharedKey(myPriv, theirB64) {
+  const raw = Uint8Array.from(atob(theirB64), c => c.charCodeAt(0));
+  const theirPub = await crypto.subtle.importKey("raw", raw, {name:"ECDH",namedCurve:"P-256"}, false, []);
+  return crypto.subtle.deriveKey({name:"ECDH",public:theirPub}, myPriv, {name:"AES-GCM",length:256}, false, ["encrypt","decrypt"]);
+}
+async function aesEncrypt(obj, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM",iv}, key, new TextEncoder().encode(JSON.stringify(obj)));
+  return JSON.stringify({iv:btoa(String.fromCharCode(...iv)), ct:btoa(String.fromCharCode(...new Uint8Array(ct)))});
+}
+async function aesDecrypt(payload1Str, key) {
+  const {iv, ct} = JSON.parse(payload1Str);
+  const plain = await crypto.subtle.decrypt(
+    {name:"AES-GCM", iv:Uint8Array.from(atob(iv),c=>c.charCodeAt(0))},
+    key, Uint8Array.from(atob(ct),c=>c.charCodeAt(0))
+  );
+  return JSON.parse(new TextDecoder().decode(plain));
+}
 
-    const pc          = new RTCPeerConnection(ICE_CFG);
-    const dc          = pc.createDataChannel("zkp");
-    recyclerDc        = dc;
-    const sessionRoom = `${myUid}-${target.supabase_uid}`;
+let _poseidon = null;
+async function getPoseidon() {
+  if (_poseidon) return _poseidon;
+  try {
+    const { buildPoseidon } = await import("https://esm.sh/circomlibjs@0.1.7");
+    _poseidon = await buildPoseidon();
+  } catch { _poseidon = null; }
+  return _poseidon;
+}
+async function computePoseidon(a, b) {
+  const p = await getPoseidon();
+  if (!p) return null;
+  const h = p([BigInt(a), BigInt(b)]);
+  return p.F.toString(h);
+}
 
-    dc.onopen = () => {
-      setRecStatus("WebRTC channel open — sending request...", "ok");
+// ── RECYCLER ──────────────────────────────────────────────────────────────────
+
+let recyclerDc = null, recSharedKey = null;
+let recReceivedCommitment = null, recReceivedProof = null, recReceivedPubSig = null, recPayload1 = null;
+let recTargetUid = null;
+
+async function initRecycler() {
+  document.getElementById("view-recycler").style.display = "block";
+  const target = JSON.parse(sessionStorage.getItem("t4m_target") || "null");
+  const form   = JSON.parse(sessionStorage.getItem("t4m_zkp_form") || "null");
+  if (!target || !form) { setRecStatus("Missing session data.", "err"); return; }
+
+  recTargetUid = target.supabase_uid;
+  const opLabel = {gt:"Greater than (>)", lt:"Less than (<)"};
+  document.getElementById("rec-target").textContent    = target.name;
+  document.getElementById("rec-element").textContent   = form.element;
+  document.getElementById("rec-condition").textContent = opLabel[form.operator] || form.operator;
+  document.getElementById("rec-threshold").textContent = form.threshold + "%";
+
+  const pc = new RTCPeerConnection(ICE_CFG);
+  const dc = pc.createDataChannel("zkp");
+  recyclerDc = dc;
+  const sessionRoom = `${myUid}-${target.supabase_uid}`;
+  let ecdhKP = null;
+  let pendingCandidates = [], answerReceived = false, sessionWs = null;
+
+  dc.onopen = async () => {
+    setRecStatus("Channel open — initiating key exchange...", "ok");
+    ecdhKP = await generateECDH();
+    dc.send(JSON.stringify({type:"dh_init", publicKey: await exportECDHPub(ecdhKP)}));
+  };
+
+  dc.onmessage = async (evt) => {
+    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+
+    if (msg.type === "dh_response") {
+      recSharedKey = await deriveSharedKey(ecdhKP.privateKey, msg.publicKey);
+      setRecStatus("Key exchange complete — sending ZKP request...", "ok");
       dc.send(JSON.stringify({
-        type: "zkp_request", element: form.element, operator: form.operator,
-        threshold: form.threshold, passport_id: form.passport_id
+        type:"zkp_request", element:form.element, operator:form.operator,
+        threshold:form.threshold, passport_id:form.passport_id
       }));
-      setRecStatus("Request sent — awaiting ZK proof from manufacturer...", "warn");
-    };
-
-    dc.onmessage = async (evt) => {
-      let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-      if (msg.type === "zkp_result") { dc.close(); await verifyAndShowResult(msg, form); }
-    };
-
-    dc.onerror = () => setRecStatus("Data channel error.", "err");
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") setRecStatus("WebRTC connection failed. Go back and try again.", "err");
-    };
-
-    let pendingCandidates = [];
-    let answerReceived    = false;
-    let sessionWs         = null;
-
-    pc.onicecandidate = (evt) => {
-      if (!evt.candidate) return;
-      if (answerReceived && sessionWs?.readyState === WebSocket.OPEN) {
-        sessionWs.send(JSON.stringify({ type: "ice_candidate", candidate: evt.candidate.toJSON() }));
-      } else {
-        pendingCandidates.push(evt.candidate.toJSON());
-      }
-    };
-
-    sessionWs = new WebSocket(`${WS_BASE}/${sessionRoom}`);
-
-    sessionWs.onmessage = async (evt) => {
-      let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-      if (msg.type === "zkp_answer") {
-        await pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
-        answerReceived = true;
-        for (const c of pendingCandidates) {
-          sessionWs.send(JSON.stringify({ type: "ice_candidate", candidate: c }));
-        }
-        pendingCandidates = [];
-        setRecStatus("Establishing direct connection...", "info");
-      } else if (msg.type === "ice_candidate") {
-        try { await pc.addIceCandidate(msg.candidate); } catch {}
-      }
-    };
-
-    sessionWs.onopen = async () => {
-      setRecStatus("Creating WebRTC offer...", "info");
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      const notifWs = new WebSocket(`${WS_BASE}/${target.supabase_uid}`);
-      notifWs.onopen = () => {
-        notifWs.send(JSON.stringify({
-          type: "zkp_offer", recycler_uid: myUid, recycler_name: myEmail,
-          recycler_peer_id: sessionStorage.getItem("t4m_peer_id") || "", sdp: offer.sdp
-        }));
-        setTimeout(() => notifWs.close(), 400);
-        setRecStatus("Offer sent — waiting for manufacturer to accept...", "warn");
-      };
-      notifWs.onerror = () => setRecStatus("Could not reach signaling server.", "err");
-    };
-
-    sessionWs.onerror = () => setRecStatus("Signaling channel error.", "err");
-  }
-
-  function setRecStatus(text, type) {
-    document.getElementById("rec-status-text").textContent = text;
-    document.getElementById("rec-status").className = "status status-" + (type || "neutral");
-  }
-
-  async function verifyAndShowResult(msg, form) {
-    setRecStatus("Verifying ZK proof cryptographically...", "info");
-    try {
-      const vKey        = await fetch("/static/zkp/verification_key.json").then(r => r.json());
-      const cryptoValid = await snarkjs.groth16.verify(vKey, msg.publicSignals, msg.proof);
-
-      if (!cryptoValid) {
-        setRecStatus("Proof failed cryptographic verification.", "err");
-        showRecResult({ cryptoValid: false });
-        return;
-      }
-
-      const expectedThreshold = String(Math.round(form.threshold * 10));
-      const expectedIsGt      = form.operator === "gt" ? "1" : "0";
-
-      if (msg.publicSignals[1] !== expectedThreshold || msg.publicSignals[2] !== expectedIsGt) {
-        setRecStatus("Proof parameters do not match the original request.", "err");
-        showRecResult({ cryptoValid: true, paramsMismatch: true });
-        return;
-      }
-
-      const claimMet = msg.publicSignals[0] === "1";
-      setRecStatus(claimMet ? "Proof verified — claim satisfied." : "Proof verified — claim not met.", claimMet ? "ok" : "warn");
-      showRecResult({ cryptoValid: true, paramsMismatch: false, claimMet, element: msg.element, operator: msg.operator, threshold: msg.threshold });
-    } catch (err) {
-      setRecStatus("Verification error: " + err.message, "err");
-    }
-  }
-
-  function showRecResult({ cryptoValid, paramsMismatch, claimMet, element, operator, threshold }) {
-    const el = document.getElementById("rec-result");
-    el.style.display = "block";
-
-    if (!cryptoValid) {
-      el.innerHTML = `<div class="result-card result-invalid">
-        <p class="result-headline">Proof invalid</p>
-        <p class="result-detail">The proof does not pass cryptographic verification.</p>
-        <span class="proof-tag proof-tag-bad">ZK proof rejected</span>
-      </div>`;
-    } else if (paramsMismatch) {
-      el.innerHTML = `<div class="result-card result-invalid">
-        <p class="result-headline">Parameter mismatch</p>
-        <p class="result-detail">The proof was generated for different parameters than requested.</p>
-        <span class="proof-tag proof-tag-bad">ZK proof rejected</span>
-      </div>`;
-    } else {
-      const opLabel = operator === "gt" ? ">" : "<";
-      el.innerHTML = `<div class="result-card ${claimMet ? "result-pass" : "result-fail"}">
-        <p class="result-headline">${claimMet ? "Claim verified" : "Claim not met"}</p>
-        <p class="result-detail">${element} ${opLabel} ${threshold}% — ${claimMet ? "condition is satisfied" : "condition is not satisfied"}</p>
-        <span class="proof-tag proof-tag-ok">ZK proof valid &nbsp;·&nbsp; WebRTC P2P</span>
-      </div>`;
+      setRecStatus("Awaiting ZK proof from manufacturer...", "warn");
     }
 
-    document.getElementById("btn-rec-done").style.display = "inline-flex";
-  }
+    if (msg.type === "zkp_result") {
+      dc.close();
+      recReceivedCommitment = msg.publicSignals[1];
+      recReceivedProof      = msg.proof;
+      recReceivedPubSig     = msg.publicSignals;
+      recPayload1           = msg.payload_1;
+      await verifyAndShow(msg, form);
+    }
+  };
 
-  async function recyclerDone() {
-    const target = JSON.parse(sessionStorage.getItem("t4m_target") || "null");
-    if (target) await fetch(`${API}/p2p/disconnect/${target.id}`, { method: "POST", headers: apiHeaders() }).catch(() => {});
-    if (recyclerDc) { try { recyclerDc.close(); } catch {} }
-    sessionStorage.removeItem("t4m_target");
-    sessionStorage.removeItem("t4m_zkp_form");
-    window.location.href = "peer_discovery.html";
-  }
+  dc.onerror = () => setRecStatus("Data channel error.", "err");
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === "failed") setRecStatus("WebRTC connection failed.", "err");
+  };
 
-  // ── MANUFACTURER ─────────────────────────────────────────────
-  const activeSessions = {};
+  pc.onicecandidate = (evt) => {
+    if (!evt.candidate) return;
+    if (answerReceived && sessionWs?.readyState === WebSocket.OPEN)
+      sessionWs.send(JSON.stringify({type:"ice_candidate", candidate:evt.candidate.toJSON()}));
+    else pendingCandidates.push(evt.candidate.toJSON());
+  };
 
-  function initManufacturer() {
-    document.getElementById("view-manufacturer").style.display = "block";
-
-    const notifWs = new WebSocket(`${WS_BASE}/${myUid}`);
-    notifWs.onopen  = () => setMfrStatus("Standing by — listening for incoming connections.", "neutral");
-    notifWs.onerror = () => setMfrStatus("Notification channel error — check server.", "err");
-    notifWs.onmessage = async (evt) => {
-      let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-      if (msg.type === "zkp_offer") await handleOffer(msg);
-    };
-    window._notifWs = notifWs;
-  }
-
-  function setMfrStatus(text, type) {
-    document.getElementById("mfr-status-text").textContent = text;
-    document.getElementById("mfr-status").className = "status status-" + (type || "neutral");
-  }
-
-  async function handleOffer(offerMsg) {
-    const { recycler_uid, recycler_name, recycler_peer_id, sdp } = offerMsg;
-    if (activeSessions[recycler_uid]) return;
-
-    document.getElementById("standing-by").style.display = "none";
-    setMfrStatus(`Incoming connection from ${recycler_name}.`, "warn");
-
-    const cardId = "card-" + recycler_uid.replace(/[^a-z0-9]/gi, "");
-    const pc     = new RTCPeerConnection(ICE_CFG);
-    activeSessions[recycler_uid] = { pc, cardId, recyclerName: recycler_name, dc: null, proof: null, publicSignals: null, operator: null, element: null, threshold: null };
-
-    renderSessionCard(recycler_uid, recycler_name, cardId);
-    updateCardStatus(cardId, "Establishing WebRTC connection...", "info");
-
-    let pendingCandidates = [];
-    let wsReady   = false;
-    let answerSdp = null;
-    const sessionWs = new WebSocket(`${WS_BASE}/${recycler_uid}-${myUid}`);
-
-    function flushSignaling() {
-      sessionWs.send(JSON.stringify({ type: "zkp_answer", sdp: answerSdp }));
-      for (const c of pendingCandidates) sessionWs.send(JSON.stringify({ type: "ice_candidate", candidate: c }));
+  sessionWs = new WebSocket(`${WS_BASE}/${sessionRoom}`);
+  sessionWs.onmessage = async (evt) => {
+    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+    if (msg.type === "zkp_answer") {
+      await pc.setRemoteDescription({type:"answer", sdp:msg.sdp});
+      answerReceived = true;
+      for (const c of pendingCandidates)
+        sessionWs.send(JSON.stringify({type:"ice_candidate", candidate:c}));
       pendingCandidates = [];
+      setRecStatus("Establishing direct P2P connection...", "info");
+    } else if (msg.type === "ice_candidate") {
+      try { await pc.addIceCandidate(msg.candidate); } catch {}
+    }
+  };
+  sessionWs.onopen = async () => {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    const notifWs = new WebSocket(`${WS_BASE}/${target.supabase_uid}`);
+    notifWs.onopen = () => {
+      notifWs.send(JSON.stringify({
+        type:"zkp_offer", recycler_uid:myUid, recycler_name:myEmail,
+        recycler_peer_id:sessionStorage.getItem("t4m_peer_id")||"", sdp:offer.sdp
+      }));
+      setTimeout(() => notifWs.close(), 400);
+      setRecStatus("Offer sent — waiting for manufacturer...", "warn");
+    };
+  };
+  sessionWs.onerror = () => setRecStatus("Signaling error.", "err");
+}
+
+function setRecStatus(text, type) {
+  document.getElementById("rec-status-text").textContent = text;
+  document.getElementById("rec-status").className = "status status-" + (type||"neutral");
+}
+
+async function verifyAndShow(msg, form) {
+  setRecStatus("Verifying ZK proof...", "info");
+  try {
+    const vKey = await fetch("/static/zkp/verification_key.json").then(r => r.json());
+    const ok   = await snarkjs.groth16.verify(vKey, msg.publicSignals, msg.proof);
+    if (!ok) { setRecStatus("Proof failed cryptographic verification.", "err"); showRecResult({ok:false}); return; }
+
+    const expThresh = String(Math.round(form.threshold * 10));
+    const expIsGt   = form.operator === "gt" ? "1" : "0";
+    if (msg.publicSignals[2] !== expThresh || msg.publicSignals[3] !== expIsGt) {
+      setRecStatus("Proof parameters mismatch.", "err"); showRecResult({ok:false, mismatch:true}); return;
     }
 
-    // onopen BEFORE awaits — WS to localhost opens in <1ms
-    sessionWs.onopen = () => { wsReady = true; if (answerSdp) flushSignaling(); };
-    sessionWs.onmessage = async (evt) => {
-      let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-      if (msg.type === "ice_candidate") { try { await pc.addIceCandidate(msg.candidate); } catch {} }
-    };
-    sessionWs.onerror = () => updateCardStatus(cardId, "Signaling channel error.", "err");
+    const claimMet = msg.publicSignals[0] === "1";
+    setRecStatus(claimMet ? "Proof verified — claim satisfied." : "Proof verified — claim not met.", claimMet?"ok":"warn");
+    showRecResult({ok:true, claimMet, element:form.element, operator:form.operator, threshold:form.threshold, commitment:msg.publicSignals[1]});
+    document.getElementById("rec-ledger-section").style.display = "block";
+    document.getElementById("btn-rec-done").style.display = "inline-flex";
+  } catch(err) { setRecStatus("Verification error: " + err.message, "err"); }
+}
 
-    pc.onicecandidate = (evt) => {
-      if (!evt.candidate) return;
-      if (wsReady) sessionWs.send(JSON.stringify({ type: "ice_candidate", candidate: evt.candidate.toJSON() }));
-      else pendingCandidates.push(evt.candidate.toJSON());
-    };
+function showRecResult({ok, mismatch, claimMet, element, operator, threshold, commitment}) {
+  const el = document.getElementById("rec-result");
+  el.style.display = "block";
+  if (!ok) {
+    el.innerHTML = `<div class="result-card result-invalid"><p class="result-headline">Proof rejected</p>
+      <p class="result-detail">${mismatch?"Parameters do not match the request.":"Failed cryptographic verification."}</p>
+      <div class="tags"><span class="tag tag-amber">ZK proof invalid</span></div></div>`;
+    return;
+  }
+  const op = operator === "gt" ? ">" : "<";
+  const commitShort = commitment.length > 20 ? commitment.slice(0,16)+"…" : commitment;
+  el.innerHTML = `<div class="result-card ${claimMet?"result-pass":"result-fail"}">
+    <p class="result-headline">${claimMet?"Claim verified":"Claim not met"}</p>
+    <p class="result-detail">${element} ${op} ${threshold}% — ${claimMet?"condition satisfied":"condition not satisfied"}</p>
+    <div class="tags">
+      <span class="tag tag-green">ZK proof valid</span>
+      <span class="tag tag-blue">WebRTC P2P</span>
+      <span class="tag tag-blue">Commitment: ${commitShort}</span>
+    </div>
+  </div>`;
+}
 
-    pc.ondatachannel = (evt) => {
-      const dc = evt.channel;
-      activeSessions[recycler_uid].dc = dc;
-      dc.onopen = () => { sessionWs.close(); updateCardStatus(cardId, "WebRTC channel open — waiting for ZKP request...", "ok"); };
-      dc.onmessage = (msgEvt) => {
-        let msg; try { msg = JSON.parse(msgEvt.data); } catch { return; }
-        if (msg.type === "zkp_request") {
-          activeSessions[recycler_uid].operator  = msg.operator;
-          activeSessions[recycler_uid].element   = msg.element;
-          activeSessions[recycler_uid].threshold = msg.threshold;
-          populateSessionCard(cardId, msg);
+async function verifyOnLedger() {
+  const btn = document.getElementById("btn-rec-ledger");
+  btn.disabled = true; btn.textContent = "Checking...";
+  const form = JSON.parse(sessionStorage.getItem("t4m_zkp_form") || "{}");
+  const out  = document.getElementById("rec-ledger-result");
+
+  try {
+    const url = `${API}/ledger/${encodeURIComponent(form.passport_id||"DMP-TEST-001")}?manufacturer_uid=${recTargetUid}`;
+    const entries = await fetch(url, {headers: apiHeaders()}).then(r => r.json());
+    if (!entries.length) { out.textContent = "No ledger entry found for this passport."; btn.disabled = false; btn.textContent = "Check ledger"; return; }
+    const entry = entries[0];
+
+    // Check A: commitment matches
+    const checkA = entry.commitment === recReceivedCommitment;
+
+    // Check B: AES decrypt → display decrypted value; Poseidon check if circomlibjs available
+    let checkB = null, decVal = null;
+    if (recSharedKey && recPayload1) {
+      try {
+        const dec = await aesDecrypt(recPayload1, recSharedKey);
+        decVal = (dec.value_scaled / 10).toFixed(1);
+        const poseidon = await getPoseidon();
+        if (poseidon) {
+          const computed = await computePoseidon(dec.value_scaled, dec.salt);
+          checkB = computed === entry.commitment;
         }
-      };
-      dc.onerror = () => updateCardStatus(cardId, "Data channel error.", "err");
-    };
+      } catch { checkB = null; }
+    }
 
-    pc.onconnectionstatechange = () => {
-      const s = pc.connectionState;
-      if (s === "connected") updateCardStatus(cardId, "WebRTC connected — waiting for ZKP request...", "ok");
-      if (s === "failed")    updateCardStatus(cardId, "WebRTC connection failed.", "err");
-    };
+    // Check C: proof identical
+    const checkC = JSON.stringify(entry.zk_proof) === JSON.stringify(recReceivedProof);
 
-    await pc.setRemoteDescription({ type: "offer", sdp });
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    const allPass = checkA && checkC && (checkB === null || checkB === true);
 
-    answerSdp = answer.sdp;
-    if (wsReady) flushSignaling();
-  }
-
-  function renderSessionCard(recycler_uid, recyclerName, cardId) {
-    const card = document.createElement("div");
-    card.className = "session-card";
-    card.id = cardId;
-    card.innerHTML = `
-      <div class="session-header">
-        <span class="session-peer">${recyclerName} <span>RECYCLER</span></span>
-        <span class="rtc-tag">● WebRTC P2P</span>
-      </div>
-      <div id="${cardId}-status" class="status status-info"><div class="dot"></div><span id="${cardId}-status-text">Establishing WebRTC connection...</span></div>
-      <div id="${cardId}-fields" style="display:none">
-        <div class="info-row"><span class="info-label">Passport</span><span class="info-value mono">DMP-TEST-001</span></div>
-        <div class="info-row"><span class="info-label">Element</span><span class="info-value" id="${cardId}-el">—</span></div>
-        <div class="info-row"><span class="info-label">Condition</span><span class="info-value" id="${cardId}-cond">—</span></div>
-        <div class="info-row"><span class="info-label">Threshold</span><span class="info-value" id="${cardId}-thresh">—</span></div>
-
-        <div class="section-divider"></div>
-
-        <div class="field">
-          <label>Actual element value (%)</label>
-          <input type="number" class="input" id="${cardId}-val" placeholder="Enter the real percentage from the passport" min="0" max="100" step="0.1">
-        </div>
-
-        <div class="btn-row">
-          <button type="button" class="btn btn-secondary" id="${cardId}-btn-proof" onclick="generateProof('${cardId}', '${recycler_uid}')">Generate ZK proof</button>
-          <button type="button" class="btn btn-primary" id="${cardId}-btn-send" style="display:none" onclick="sendResult('${cardId}', '${recycler_uid}')">Send proof to recycler</button>
-        </div>
-        <div class="proof-anim" id="${cardId}-proof-anim">
-          <div class="spinner"></div>
-          <span>Generating Groth16 proof in browser — please wait...</span>
-        </div>
+    out.innerHTML = `
+      <div class="result-card ${allPass?"result-pass":"result-fail"}" style="margin-top:0">
+        <p class="result-headline" style="margin-bottom:12px">${allPass?"Ledger consistent":"Tamper detected"}</p>
+        <div class="check-row"><span class="check-label">A — Ledger commitment matches received</span><span class="${checkA?"check-pass":"check-fail"}">${checkA?"✓ Pass":"✗ Fail"}</span></div>
+        <div class="check-row"><span class="check-label">B — AES payload hashes to commitment${decVal?` (value: ${decVal}%)`:""}</span><span class="${checkB===null?"check-na":checkB?"check-pass":"check-fail"}">${checkB===null?"— No circomlibjs":checkB?"✓ Pass":"✗ Fail"}</span></div>
+        <div class="check-row"><span class="check-label">C — Ledger ZK proof matches received</span><span class="${checkC?"check-pass":"check-fail"}">${checkC?"✓ Pass":"✗ Fail"}</span></div>
       </div>`;
-    document.getElementById("session-list").appendChild(card);
-  }
 
-  function updateCardStatus(cardId, text, type) {
-    const statusEl = document.getElementById(cardId + "-status");
-    const textEl   = document.getElementById(cardId + "-status-text");
-    if (statusEl) statusEl.className = "status status-" + (type || "neutral");
-    if (textEl)   textEl.textContent = text;
-  }
-
-  function populateSessionCard(cardId, msg) {
-    const opLabel = { gt: "Greater than (>)", lt: "Less than (<)" };
-    document.getElementById(cardId + "-el").textContent    = msg.element;
-    document.getElementById(cardId + "-cond").textContent  = opLabel[msg.operator] || msg.operator;
-    document.getElementById(cardId + "-thresh").textContent = msg.threshold + "%";
-    document.getElementById(cardId + "-fields").style.display = "block";
-    updateCardStatus(cardId, "ZKP request received — enter the actual value and generate a proof.", "warn");
-  }
-
-  async function generateProof(cardId, recyclerUid) {
-    const valInput = document.getElementById(cardId + "-val").value;
-    const val      = parseFloat(valInput);
-    if (valInput === "" || isNaN(val)) {
-      updateCardStatus(cardId, "Enter the actual measured element percentage first.", "err");
-      return;
+    if (!allPass) {
+      await fetch(`${API}/ledger/${entry.id}/flag`, {method:"POST", headers:apiHeaders()});
+      out.innerHTML += `<p style="font-size:12px;color:#b91c1c;margin-top:8px">Entry flagged as tampered and reported to auditor.</p>`;
     }
+  } catch(err) {
+    out.textContent = "Error: " + err.message;
+  }
+  btn.disabled = false; btn.textContent = "Check ledger";
+}
 
-    const session      = activeSessions[recyclerUid];
-    const threshold    = activeSessions[recyclerUid].threshold;
-    const valueScaled  = Math.round(val * 10);
-    const threshScaled = Math.round(threshold * 10);
-    const isGt         = session.operator === "gt" ? "1" : "0";
+async function recyclerDone() {
+  const target = JSON.parse(sessionStorage.getItem("t4m_target") || "null");
+  if (target) await fetch(`${API}/p2p/disconnect/${target.id}`, {method:"POST", headers:apiHeaders()}).catch(()=>{});
+  try { recyclerDc?.close(); } catch {}
+  sessionStorage.removeItem("t4m_target");
+  sessionStorage.removeItem("t4m_zkp_form");
+  window.location.href = "peer_discovery.html";
+}
 
-    document.getElementById(cardId + "-btn-proof").disabled = true;
-    document.getElementById(cardId + "-proof-anim").classList.add("visible");
-    updateCardStatus(cardId, "Generating Groth16 ZK proof in browser...", "info");
+// ── MANUFACTURER ─────────────────────────────────────────────────────────────
 
-    try {
-      const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-        { value_scaled: String(valueScaled), threshold_scaled: String(threshScaled), is_gt: isGt },
-        "/static/zkp/element_threshold.wasm",
-        "/static/zkp/element_threshold_0000.zkey"
-      );
-      session.proof         = proof;
-      session.publicSignals = publicSignals;
-      document.getElementById(cardId + "-proof-anim").classList.remove("visible");
-      document.getElementById(cardId + "-btn-send").style.display = "inline-flex";
-      updateCardStatus(cardId, "ZK proof ready. Review and send to recycler.", "ok");
-    } catch (err) {
-      document.getElementById(cardId + "-proof-anim").classList.remove("visible");
-      document.getElementById(cardId + "-btn-proof").disabled = false;
-      updateCardStatus(cardId, "Proof generation failed: " + err.message, "err");
-    }
+const activeSessions = {};
+let hePublicKey = null;
+
+async function fetchHEKey() {
+  if (hePublicKey) return hePublicKey;
+  const resp = await fetch(`${API}/he/public-key`, {headers: apiHeaders()});
+  hePublicKey = (await resp.json()).n;
+  return hePublicKey;
+}
+
+function initManufacturer() {
+  document.getElementById("view-manufacturer").style.display = "block";
+  const notifWs = new WebSocket(`${WS_BASE}/${myUid}`);
+  notifWs.onopen  = () => setMfrStatus("Standing by — listening for connections.", "neutral");
+  notifWs.onerror = () => setMfrStatus("Notification channel error.", "err");
+  notifWs.onmessage = async (evt) => {
+    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+    if (msg.type === "zkp_offer") await handleOffer(msg);
+  };
+}
+
+function setMfrStatus(text, type) {
+  document.getElementById("mfr-status-text").textContent = text;
+  document.getElementById("mfr-status").className = "status status-" + (type||"neutral");
+}
+
+async function handleOffer(offerMsg) {
+  const {recycler_uid, recycler_name, sdp} = offerMsg;
+  if (activeSessions[recycler_uid]) return;
+  document.getElementById("standing-by").style.display = "none";
+  setMfrStatus(`Incoming connection from ${recycler_name}.`, "warn");
+
+  const cardId = "card-" + recycler_uid.replace(/[^a-z0-9]/gi,"");
+  const pc = new RTCPeerConnection(ICE_CFG);
+  activeSessions[recycler_uid] = {pc, cardId, recyclerUid:recycler_uid, recyclerName:recycler_name, dc:null, ecdhKP:null, sharedKey:null, proof:null, publicSignals:null, commitment:null, payload1:null, payload2:null, element:null, operator:null, threshold:null};
+
+  renderSessionCard(recycler_uid, recycler_name, cardId);
+  updateCardStatus(cardId, "Establishing WebRTC connection...", "info");
+
+  let pendingCandidates = [], wsReady = false, answerSdp = null;
+  const sessionWs = new WebSocket(`${WS_BASE}/${recycler_uid}-${myUid}`);
+
+  function flushSignaling() {
+    sessionWs.send(JSON.stringify({type:"zkp_answer", sdp:answerSdp}));
+    for (const c of pendingCandidates) sessionWs.send(JSON.stringify({type:"ice_candidate", candidate:c}));
+    pendingCandidates = [];
   }
 
-  function sendResult(cardId, recyclerUid) {
-    const session = activeSessions[recyclerUid];
-    if (!session?.proof || !session?.dc) return;
+  sessionWs.onopen = () => { wsReady = true; if (answerSdp) flushSignaling(); };
+  sessionWs.onmessage = async (evt) => {
+    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+    if (msg.type === "ice_candidate") try { await pc.addIceCandidate(msg.candidate); } catch {}
+  };
+
+  pc.onicecandidate = (evt) => {
+    if (!evt.candidate) return;
+    if (wsReady) sessionWs.send(JSON.stringify({type:"ice_candidate", candidate:evt.candidate.toJSON()}));
+    else pendingCandidates.push(evt.candidate.toJSON());
+  };
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState;
+    if (s === "connected") updateCardStatus(cardId, "WebRTC connected — waiting for key exchange...", "ok");
+    if (s === "failed")    updateCardStatus(cardId, "WebRTC connection failed.", "err");
+  };
+
+  pc.ondatachannel = (evt) => {
+    const dc = evt.channel;
+    activeSessions[recycler_uid].dc = dc;
+    dc.onopen = () => { sessionWs.close(); updateCardStatus(cardId, "Channel open — waiting for key exchange...", "ok"); };
+    dc.onmessage = (msgEvt) => {
+      let msg; try { msg = JSON.parse(msgEvt.data); } catch { return; }
+      if (msg.type === "dh_init")    handleDHInit(cardId, recycler_uid, msg);
+      if (msg.type === "zkp_request") handleZkpRequest(cardId, recycler_uid, msg);
+    };
+    dc.onerror = () => updateCardStatus(cardId, "Data channel error.", "err");
+  };
+
+  await pc.setRemoteDescription({type:"offer", sdp});
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  answerSdp = answer.sdp;
+  if (wsReady) flushSignaling();
+}
+
+async function handleDHInit(cardId, recyclerUid, msg) {
+  const session = activeSessions[recyclerUid];
+  session.ecdhKP = await generateECDH();
+  const myPub = await exportECDHPub(session.ecdhKP);
+  session.dc.send(JSON.stringify({type:"dh_response", publicKey:myPub}));
+  session.sharedKey = await deriveSharedKey(session.ecdhKP.privateKey, msg.publicKey);
+  updateCardStatus(cardId, "Key exchange done — waiting for ZKP request...", "ok");
+}
+
+async function handleZkpRequest(cardId, recyclerUid, msg) {
+  const session = activeSessions[recyclerUid];
+  session.element   = msg.element;
+  session.operator  = msg.operator;
+  session.threshold = msg.threshold;
+  populateSessionCard(cardId, msg);
+}
+
+function renderSessionCard(recyclerUid, recyclerName, cardId) {
+  const card = document.createElement("div");
+  card.className = "session-card"; card.id = cardId;
+  card.innerHTML = `
+    <div class="session-header">
+      <span class="session-peer">${recyclerName} <span>RECYCLER</span></span>
+      <span class="rtc-tag">● WebRTC P2P</span>
+    </div>
+    <div id="${cardId}-status" class="status status-info"><div class="dot"></div><span id="${cardId}-status-text">Connecting...</span></div>
+    <div id="${cardId}-fields" style="display:none">
+      <div class="info-row"><span class="info-label">Passport</span><span class="info-value mono">DMP-TEST-001</span></div>
+      <div class="info-row"><span class="info-label">Element</span><span class="info-value" id="${cardId}-el">—</span></div>
+      <div class="info-row"><span class="info-label">Condition</span><span class="info-value" id="${cardId}-cond">—</span></div>
+      <div class="info-row"><span class="info-label">Threshold</span><span class="info-value" id="${cardId}-thresh">—</span></div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>Actual element value (%)</label>
+        <input type="number" class="input" id="${cardId}-val" placeholder="Enter the real percentage from the passport" min="0" max="100" step="0.1">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="${cardId}-btn-proof" onclick="generateAndSend('${cardId}','${recyclerUid}')">Generate & send proof</button>
+        <button class="btn btn-primary" id="${cardId}-btn-ledger" style="display:none" onclick="submitToLedger('${cardId}','${recyclerUid}')">Submit to ledger</button>
+      </div>
+      <div class="proof-anim" id="${cardId}-proof-anim"><div class="spinner"></div><span id="${cardId}-proof-label">Generating Groth16 proof...</span></div>
+    </div>`;
+  document.getElementById("session-list").appendChild(card);
+}
+
+function updateCardStatus(cardId, text, type) {
+  const s = document.getElementById(cardId+"-status"); const t = document.getElementById(cardId+"-status-text");
+  if (s) s.className = "status status-" + (type||"neutral");
+  if (t) t.textContent = text;
+}
+
+function populateSessionCard(cardId, msg) {
+  const opLabel = {gt:"Greater than (>)", lt:"Less than (<)"};
+  document.getElementById(cardId+"-el").textContent    = msg.element;
+  document.getElementById(cardId+"-cond").textContent  = opLabel[msg.operator] || msg.operator;
+  document.getElementById(cardId+"-thresh").textContent = msg.threshold + "%";
+  document.getElementById(cardId+"-fields").style.display = "block";
+  updateCardStatus(cardId, "Request received — enter value and generate proof.", "warn");
+}
+
+async function generateAndSend(cardId, recyclerUid) {
+  const session = activeSessions[recyclerUid];
+  const valStr  = document.getElementById(cardId+"-val").value;
+  const val     = parseFloat(valStr);
+  if (!valStr || isNaN(val)) { updateCardStatus(cardId, "Enter the actual element percentage first.", "err"); return; }
+
+  const valueScaled  = Math.round(val * 10);
+  const threshScaled = Math.round(session.threshold * 10);
+  const isGt         = session.operator === "gt" ? "1" : "0";
+  const salt         = randomSalt();
+
+  document.getElementById(cardId+"-btn-proof").disabled = true;
+  document.getElementById(cardId+"-proof-anim").classList.add("visible");
+  updateCardStatus(cardId, "Generating Groth16 ZK proof in browser...", "info");
+
+  try {
+    const {proof, publicSignals} = await snarkjs.groth16.fullProve(
+      {value_scaled:String(valueScaled), salt, threshold_scaled:String(threshScaled), is_gt:isGt},
+      "/static/zkp/element_threshold.wasm", "/static/zkp/element_threshold_0000.zkey"
+    );
+
+    document.getElementById(cardId+"-proof-label").textContent = "Encrypting...";
+    const n_hex  = await fetchHEKey();
+    const payload1 = await aesEncrypt({value_scaled:valueScaled, salt}, session.sharedKey);
+    const payload2 = paillierEncrypt(valueScaled, n_hex);
+
+    session.proof         = proof;
+    session.publicSignals = publicSignals;
+    session.commitment    = publicSignals[1];
+    session.payload1      = payload1;
+    session.payload2      = payload2;
+    session.salt          = salt;
 
     session.dc.send(JSON.stringify({
-      type: "zkp_result", proof: session.proof, publicSignals: session.publicSignals,
-      element: session.element, operator: session.operator, threshold: session.threshold
+      type:"zkp_result", proof, publicSignals, payload_1:payload1
     }));
 
-    document.getElementById(cardId + "-btn-send").disabled = true;
-    updateCardStatus(cardId, "Proof sent. Session closing.", "ok");
-
-    setTimeout(() => {
-      try { session.dc.close(); session.pc.close(); } catch {}
-      delete activeSessions[recyclerUid];
-      const card = document.getElementById(cardId);
-      if (card) card.style.opacity = "0.4";
-      if (Object.keys(activeSessions).length === 0) {
-        document.getElementById("standing-by").style.display = "block";
-        setMfrStatus("All sessions closed. Standing by.", "neutral");
-      }
-    }, 1200);
+    document.getElementById(cardId+"-proof-anim").classList.remove("visible");
+    document.getElementById(cardId+"-btn-ledger").style.display = "inline-flex";
+    updateCardStatus(cardId, "Proof sent to recycler. Submit to auditor ledger.", "ok");
+  } catch(err) {
+    document.getElementById(cardId+"-proof-anim").classList.remove("visible");
+    document.getElementById(cardId+"-btn-proof").disabled = false;
+    updateCardStatus(cardId, "Error: " + err.message, "err");
   }
+}
 
-  // Init
-  if      (myRole === "RECYCLER")     initRecycler();
-  else if (myRole === "MANUFACTURER") initManufacturer();
-  else {
-    document.getElementById("view-manufacturer").style.display = "block";
-    setMfrStatus("This page is for MANUFACTURER and RECYCLER roles.", "warn");
+async function submitToLedger(cardId, recyclerUid) {
+  const session = activeSessions[recyclerUid];
+  const form    = JSON.parse(sessionStorage.getItem("t4m_zkp_form") || "{}");
+  const btn     = document.getElementById(cardId+"-btn-ledger");
+  btn.disabled  = true; btn.textContent = "Submitting...";
+
+  try {
+    const resp = await fetch(`${API}/ledger`, {
+      method:"POST", headers:apiHeaders(),
+      body: JSON.stringify({
+        passport_id: form.passport_id || "DMP-TEST-001",
+        recycler_uid: recyclerUid,
+        element: session.element,
+        operator: session.operator,
+        threshold: session.threshold,
+        commitment: session.commitment,
+        payload_1: session.payload1,
+        payload_2: session.payload2,
+        zk_proof: JSON.stringify(session.proof),
+        public_signals: JSON.stringify(session.publicSignals)
+      })
+    });
+    if (resp.ok) {
+      const {id} = await resp.json();
+      updateCardStatus(cardId, `Submitted to ledger (entry #${id}). Session complete.`, "ok");
+      btn.textContent = "Submitted ✓"; btn.disabled = true;
+    } else {
+      const err = await resp.json();
+      updateCardStatus(cardId, "Ledger error: " + (err.detail || resp.status), "err");
+      btn.disabled = false; btn.textContent = "Submit to ledger";
+    }
+  } catch(err) {
+    updateCardStatus(cardId, "Network error: " + err.message, "err");
+    btn.disabled = false; btn.textContent = "Submit to ledger";
   }
+}
+
+if      (myRole === "RECYCLER")     initRecycler();
+else if (myRole === "MANUFACTURER") initManufacturer();
 </script>
 </body>
 </html>

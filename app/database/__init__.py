@@ -22,6 +22,8 @@ def init_db():
     import app.models.passport_lineage
     import app.models.passport_custody
     import app.models.peer_session
+    import app.models.mr_relationship
+    import app.models.ledger_entry
     Base.metadata.create_all(bind=engine)
 
 def get_db():

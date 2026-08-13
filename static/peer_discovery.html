@@ -168,6 +168,24 @@
         <a onclick="window.location.href='zkp_queue.html'">Open Verification Queue →</a>
       </div>
     </div>
+    <div id="auditor-banner" style="display:none">
+      <div class="banner">
+        <span>You are signed in as <strong>AUDITOR</strong> — browse all ledger entries and trigger aggregate queries.</span>
+        <a onclick="window.location.href='auditor.html'">Open Ledger →</a>
+      </div>
+    </div>
+    <div id="regulator-banner" style="display:none">
+      <div class="banner">
+        <span>You are signed in as <strong>REGULATOR</strong> — run decrypted aggregate reports by passport.</span>
+        <a onclick="window.location.href='regulator.html'">Open Reports →</a>
+      </div>
+    </div>
+    <div id="admin-banner" style="display:none">
+      <div class="banner">
+        <span>You are signed in as <strong>ADMIN</strong> — manage manufacturer–recycler relationships.</span>
+        <a onclick="window.location.href='admin_relationships.html'">Manage Relationships →</a>
+      </div>
+    </div>
 
     <div class="card" style="padding:0; overflow:hidden;">
       <div style="padding: 20px 24px 0;">
@@ -222,9 +240,10 @@
     badge.textContent = role;
     badge.className = "badge " + role;
     myRole = role;
-    if (role === "MANUFACTURER") {
-      document.getElementById("mfr-banner").style.display = "block";
-    }
+    if (role === "MANUFACTURER") document.getElementById("mfr-banner").style.display = "block";
+    if (role === "AUDITOR")      document.getElementById("auditor-banner").style.display = "block";
+    if (role === "REGULATOR")    document.getElementById("regulator-banner").style.display = "block";
+    if (role === "ADMIN")        document.getElementById("admin-banner").style.display = "block";
   }
 
   function timeAgo(iso) {

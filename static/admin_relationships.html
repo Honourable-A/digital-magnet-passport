@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin — Relationships — TRACE4MAGNET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --background: #ffffff; --foreground: #09090b; --card: #ffffff;
+      --primary: #18181b; --primary-foreground: #fafafa;
+      --secondary: #f4f4f5; --secondary-foreground: #18181b;
+      --muted: #f4f4f5; --muted-foreground: #71717a;
+      --border: #e4e4e7; --input: #e4e4e7; --ring: #a1a1aa;
+      --destructive: #dc2626;
+      --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-4xl: 26px;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--background); color: var(--foreground); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand span { color: var(--muted-foreground); font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted-foreground); }
+    .back-link { font-size: 13px; color: var(--muted-foreground); text-decoration: none; font-weight: 500; cursor: pointer; }
+    .back-link:hover { color: var(--foreground); }
+    main { padding: 32px 24px; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.025em; }
+    .page-desc { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; }
+    .card { background: var(--card); border-radius: var(--radius-xl); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); padding: 24px; }
+    .card-title { font-size: 15px; font-weight: 500; }
+    .card-desc { font-size: 13px; color: var(--muted-foreground); margin-top: 3px; margin-bottom: 20px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; height: 36px; padding: 0 16px; border: 1px solid transparent; cursor: pointer; transition: all 120ms; font-family: inherit; }
+    .btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+    .btn-primary { background: var(--primary); color: var(--primary-foreground); } .btn-primary:hover { opacity: 0.85; }
+    .btn-outline { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.04); } .btn-outline:hover { background: var(--muted); }
+    .btn-danger { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); color: #b91c1c; } .btn-danger:hover { background: rgba(220,38,38,0.14); }
+    .btn-sm { height: 28px; font-size: 12px; padding: 0 10px; border-radius: var(--radius-sm); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    label { font-size: 13px; font-weight: 500; }
+    select.input, .input { height: 36px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--background); padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--foreground); outline: none; transition: border-color 120ms, box-shadow 120ms; }
+    .input:focus, select.input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(161,161,170,0.25); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+    .alert { border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; border: 1px solid transparent; margin-top: 12px; }
+    .alert-ok  { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+    .alert-err { background: rgba(220,38,38,0.06); border-color: rgba(220,38,38,0.2); color: #b91c1c; }
+    .badge { display: inline-flex; align-items: center; height: 20px; border-radius: var(--radius-4xl); padding: 0 8px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
+    .MANUFACTURER { background: #18181b; color: #fafafa; }
+    .RECYCLER { background: #f4f4f5; color: #18181b; border-color: #e4e4e7; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th { height: 40px; padding: 0 12px; text-align: left; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+    td { padding: 10px 12px; vertical-align: middle; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 100ms; }
+    tbody tr:hover { background: rgba(244,244,245,0.6); }
+    tbody tr:last-child { border-bottom: none; }
+    .td-muted { color: var(--muted-foreground); font-size: 12px; }
+    .td-mono  { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted-foreground); }
+    .empty-state { text-align: center; padding: 40px; color: var(--muted-foreground); font-size: 13px; }
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <span class="brand">TRACE4MAGNET <span>/ Admin — Relationships</span></span>
+  <div class="header-right">
+    <strong id="info-email"></strong>
+    <a class="back-link" onclick="window.location.href='peer_discovery.html'">← Back</a>
+  </div>
+</div>
+
+<main>
+  <div>
+    <h1>Manufacturer–Recycler Relationships</h1>
+    <p class="page-desc">Authorize which recyclers can receive ZKP proofs from which manufacturers. The ledger enforces this gating on submission.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Create relationship</div>
+    <p class="card-desc">Select a manufacturer and a recycler to authorize their P2P ZKP sessions and ledger submissions.</p>
+    <div class="form-row">
+      <div class="field" style="margin-bottom:0">
+        <label>Manufacturer</label>
+        <select class="input" id="sel-mfr"><option value="">Loading...</option></select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Recycler</label>
+        <select class="input" id="sel-rec"><option value="">Loading...</option></select>
+      </div>
+      <button class="btn btn-primary" onclick="createRelationship()" style="align-self:end">Authorize</button>
+    </div>
+    <div id="create-alert" style="display:none"></div>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:20px 24px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span class="card-title">Authorized relationships</span>
+        <button class="btn btn-outline btn-sm" onclick="loadRelationships()">Refresh</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>MANUFACTURER</th>
+          <th>RECYCLER</th>
+          <th>AUTHORIZED BY</th>
+          <th>CREATED</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rel-body">
+        <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const API   = "http://localhost:8000/api/v1";
+const token = sessionStorage.getItem("t4m_token");
+const email = sessionStorage.getItem("t4m_email") || "";
+
+if (!token) window.location.href = "peer_discovery.html";
+document.getElementById("info-email").textContent = email;
+
+function apiHeaders() { return {"Content-Type":"application/json","Authorization":`Bearer ${token}`}; }
+
+function timeAgo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso + "Z")) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+let allPeers = [];
+
+async function loadPeers() {
+  try {
+    const resp = await fetch(`${API}/admin/peers`, {headers: apiHeaders()});
+    if (!resp.ok) { alert("Access denied — requires ADMIN role."); return; }
+    allPeers = await resp.json();
+
+    const mfrs = allPeers.filter(p => p.role === "MANUFACTURER");
+    const recs = allPeers.filter(p => p.role === "RECYCLER");
+
+    const selM = document.getElementById("sel-mfr");
+    const selR = document.getElementById("sel-rec");
+    selM.innerHTML = mfrs.length
+      ? `<option value="">Select manufacturer...</option>` + mfrs.map(p => `<option value="${p.supabase_uid}">${p.name}</option>`).join("")
+      : `<option value="">No manufacturers online</option>`;
+    selR.innerHTML = recs.length
+      ? `<option value="">Select recycler...</option>` + recs.map(p => `<option value="${p.supabase_uid}">${p.name}</option>`).join("")
+      : `<option value="">No recyclers online</option>`;
+  } catch(err) {
+    alert("Error loading peers: " + err.message);
+  }
+}
+
+async function loadRelationships() {
+  const tbody = document.getElementById("rel-body");
+  tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Loading...</td></tr>`;
+  try {
+    const resp = await fetch(`${API}/admin/relationships`, {headers: apiHeaders()});
+    if (!resp.ok) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Access denied.</td></tr>`; return; }
+    const rels = await resp.json();
+    if (!rels.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No relationships configured yet.</td></tr>`; return; }
+
+    function peerName(uid) {
+      const p = allPeers.find(x => x.supabase_uid === uid);
+      return p ? p.name : uid.slice(0,8) + "…";
+    }
+
+    tbody.innerHTML = rels.map(r => `<tr>
+      <td class="td-muted">${r.id}</td>
+      <td><span style="font-weight:500">${peerName(r.manufacturer_uid)}</span><br><span class="td-mono">${r.manufacturer_uid.slice(0,12)}…</span></td>
+      <td><span style="font-weight:500">${peerName(r.recycler_uid)}</span><br><span class="td-mono">${r.recycler_uid.slice(0,12)}…</span></td>
+      <td class="td-mono">${r.authorized_by ? r.authorized_by.slice(0,8)+"…" : "—"}</td>
+      <td class="td-muted">${r.created_at ? timeAgo(r.created_at) : "—"}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRelationship(${r.id})">Revoke</button></td>
+    </tr>`).join("");
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${err.message}</td></tr>`;
+  }
+}
+
+async function createRelationship() {
+  const mfrUid = document.getElementById("sel-mfr").value;
+  const recUid = document.getElementById("sel-rec").value;
+  const alertEl = document.getElementById("create-alert");
+
+  if (!mfrUid || !recUid) { showAlert("Select both a manufacturer and a recycler.", "err"); return; }
+  if (mfrUid === recUid)  { showAlert("Manufacturer and recycler must be different peers.", "err"); return; }
+
+  try {
+    const resp = await fetch(`${API}/admin/relationships`, {
+      method: "POST", headers: apiHeaders(),
+      body: JSON.stringify({manufacturer_uid: mfrUid, recycler_uid: recUid})
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      showAlert(`Relationship #${data.id} created.`, "ok");
+      loadRelationships();
+    } else {
+      showAlert(data.detail || "Failed to create relationship.", "err");
+    }
+  } catch(err) {
+    showAlert("Error: " + err.message, "err");
+  }
+}
+
+async function deleteRelationship(id) {
+  if (!confirm(`Revoke relationship #${id}? Manufacturers and recyclers in this pair will no longer be able to submit to the ledger.`)) return;
+  try {
+    const resp = await fetch(`${API}/admin/relationships/${id}`, {method:"DELETE", headers: apiHeaders()});
+    if (resp.ok || resp.status === 204) {
+      loadRelationships();
+    } else {
+      const data = await resp.json();
+      alert(data.detail || "Failed to revoke.");
+    }
+  } catch(err) {
+    alert("Error: " + err.message);
+  }
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById("create-alert");
+  el.style.display = "block";
+  el.className = "alert alert-" + type;
+  el.textContent = msg;
+  setTimeout(() => { el.style.display = "none"; }, 4000);
+}
+
+loadPeers().then(loadRelationships);
+</script>
+</body>
+</html>
