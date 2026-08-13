@@ -1,197 +1,264 @@
 "use client";
 
-
 import {
- useEffect,
- useState
+  useEffect,
+  useState
 } from "react";
 
-
 import {
- CheckCircle2
+  CheckCircle2
 } from "lucide-react";
 
-
 import {
- getPassportEvents
+  getPassportEvents
 } from "@/lib/api/circularity";
 
 
+interface PassportEvent {
+
+  id:number;
+
+  event_type?:string;
+
+  event_date?:string;
+
+  notes?:string;
+
+}
+
 
 export default function Timeline({
+  passportId,
+}: {
+  passportId:number;
+}) {
 
- passportId,
 
-}:{
- passportId:number;
-}){
+const [events,setEvents] =
+useState<PassportEvent[]>([]);
 
 
- const [events,setEvents]=
- useState<any[]>([]);
+const [loading,setLoading] =
+useState(true);
 
 
- const [loading,setLoading]=
- useState(true);
 
+useEffect(()=>{
 
 
- useEffect(()=>{
+async function loadEvents(){
 
 
-  async function load(){
+try {
 
 
-   try{
+const data =
+await getPassportEvents(
+  passportId
+);
 
+console.log("TIMELINE DATA:", data);
 
-    const data =
-      await getPassportEvents(
-        passportId
-      );
+console.log(
+  "LIFECYCLE EVENTS:",
+  data
+);
 
 
-    setEvents(data);
 
+setEvents(
+  data ?? []
+);
 
-   }
-   catch(error){
 
-    console.error(
-      "EVENT ERROR:",
-      error
-    );
 
-   }
-   finally{
+}
+catch(error){
 
-    setLoading(false);
 
-   }
+console.error(
+  "EVENT LOAD ERROR:",
+  error
+);
 
-  }
 
+setEvents([]);
 
-  load();
 
+}
+finally{
 
- },[passportId]);
 
+setLoading(false);
 
 
+}
 
 
- if(loading){
+}
 
-  return (
-    <p className="text-sm text-muted-foreground">
-      Loading lifecycle...
-    </p>
-  );
 
- }
 
+loadEvents();
 
 
 
+},[passportId]);
 
- if(events.length===0){
 
-  return (
 
-    <div className="rounded-lg border p-6">
 
-      <h3 className="font-semibold">
-        No Lifecycle Events
-      </h3>
 
+if(loading){
 
-      <p className="text-sm text-muted-foreground mt-2">
-        No circularity history available.
-      </p>
+return (
 
-    </div>
+<p className="text-sm text-muted-foreground">
+Loading lifecycle data...
+</p>
 
-  );
+);
 
- }
+}
 
 
 
+if(events.length === 0){
 
+return (
 
- return (
+<div className="rounded-lg border p-6">
 
-  <div className="space-y-6">
+<h3 className="font-semibold">
+No Lifecycle Events Available
+</h3>
 
 
-   {
-    events.map(
-     (event,index)=>(
+<p className="mt-2 text-sm text-muted-foreground">
+No manufacturing, deployment, recovery or recycling events have been registered for this passport yet.
+</p>
 
 
-      <div
-       key={event.id}
-       className="flex gap-4"
-      >
+</div>
 
+);
 
-       <div className="flex flex-col items-center">
+}
 
-        <CheckCircle2
-         className="h-6 w-6 text-green-600"
-        />
 
 
-        {
-         index !== events.length-1 &&
-         (
-          <div className="h-12 border-l"/>
-         )
-        }
 
+return (
 
-       </div>
+<div className="space-y-4">
 
 
+{
+events.map((event,index)=>(
 
 
-       <div
-        className="rounded-lg border p-4 flex-1"
-       >
+<div
+key={event.id ?? index}
+className="flex gap-4"
+>
 
-        <h3 className="font-semibold">
-         {event.event_type}
-        </h3>
 
 
-        <p className="text-sm text-muted-foreground">
-         {
-          new Date(
-           event.event_date
-          ).toLocaleString()
-         }
-        </p>
+<div className="flex flex-col items-center">
 
 
-        <p className="mt-2 text-sm">
-         {event.notes}
-        </p>
+<CheckCircle2
+className="h-6 w-6"
+/>
 
 
-       </div>
 
+{
+index !== events.length - 1 && (
 
-      </div>
+<div className="h-12 border-l"/>
 
+)
 
-     )
-    )
-   }
+}
 
 
-  </div>
 
- );
+</div>
+
+
+
+
+
+<div className="flex-1 rounded-lg border p-4">
+
+
+<h3 className="font-semibold">
+
+{
+event.event_type
+?
+event.event_type.replaceAll("_"," ")
+:
+"Lifecycle Event"
+}
+
+</h3>
+
+
+
+
+{
+event.event_date && (
+
+<p className="text-sm text-muted-foreground">
+
+{
+new Date(
+event.event_date
+).toLocaleDateString()
+}
+
+</p>
+
+)
+
+}
+
+
+
+
+{
+event.notes && (
+
+<p className="mt-2 text-sm">
+
+{event.notes}
+
+</p>
+
+)
+
+}
+
+
+
+</div>
+
+
+
+</div>
+
+
+))
+
+}
+
+
+
+</div>
+
+);
+
 
 }

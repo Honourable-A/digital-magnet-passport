@@ -5,10 +5,10 @@ import { ArrowLeft } from "lucide-react";
 import { getPassport } from "@/lib/api/passport";
 
 import PassportTabs from "@/components/passport/passport-tabs";
+import PassportQR from "@/components/passport/passport-qr";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 
 type PageProps = {
   params: Promise<{
@@ -16,55 +16,48 @@ type PageProps = {
   }>;
 };
 
-
 function getStatusVariant(status: boolean) {
   return status ? "default" : "outline";
 }
-
 
 export default async function PassportPage({
   params,
 }: PageProps) {
 
-
   const { id } = await params;
 
-
   let passport;
-
 
   try {
 
     passport = await getPassport(id);
 
-
-  } catch(error){
-
+  } catch(error) {
 
     console.error(
       "Passport lookup failed:",
       error
     );
 
-
     notFound();
 
   }
 
+
+  if(!passport){
+    notFound();
+  }
 
 
   return (
 
     <div className="space-y-6">
 
-
       {/* Header */}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-
         <div>
-
 
           <Button
             asChild
@@ -80,29 +73,31 @@ export default async function PassportPage({
 
             </Link>
 
-
           </Button>
 
 
-
           <h1 className="text-3xl font-semibold">
-
             {passport.passport_id}
-
           </h1>
 
 
-
           <p className="mt-1 text-muted-foreground">
-
             Digital Magnet Passport
-
           </p>
 
 
+          {/* QR Code */}
+
+          <div className="mt-5">
+
+            <PassportQR
+              passportId={passport.passport_id}
+            />
+
+          </div>
+
+
         </div>
-
-
 
 
         <Badge
@@ -115,8 +110,8 @@ export default async function PassportPage({
 
           {
             passport.status
-              ? "Verified"
-              : "Pending"
+            ? "Verified"
+            : "Pending"
           }
 
         </Badge>
@@ -125,13 +120,11 @@ export default async function PassportPage({
       </div>
 
 
-
-
       {/* Role Based Tabs */}
 
       <PassportTabs
-  passport={passport}
-/>
+        passport={passport}
+      />
 
 
     </div>

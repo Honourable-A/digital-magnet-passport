@@ -3,7 +3,6 @@ import PassportTable from "./passport-table";
 
 export default async function PassportPage() {
   const passports = await getPassports();
-  console.log("PASSPORT DATA:", passports);
 
   return (
     <div className="space-y-6">

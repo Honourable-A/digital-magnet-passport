@@ -1,168 +1,127 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
+Tabs,
+TabsList,
+TabsTrigger,
+TabsContent,
 } from "@/components/ui/tabs";
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+Card,
+CardContent,
+CardHeader,
+CardTitle,
 } from "@/components/ui/card";
 
-import {
-  Badge
-} from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  getUserRole
-} from "@/lib/api/profile";
-
-import {
-  passportPermissions,
-  Role,
+passportPermissions,
+Role,
 } from "@/lib/roles";
+
+import {
+useRoleStore
+} from "@/store/role-store";
+
+import { Passport } from "@/lib/api/passport";
 
 import Composition from "@/components/Composition";
 import Performance from "@/components/Performance";
 import Circularity from "@/components/passport/circularity";
 import Compliance from "@/components/passport/compliance";
 import Verification from "@/components/passport/verification";
+import Provenance from "@/components/provenance/provenance-tab";
+
 
 export default function PassportTabs({
- passport
-}:{
- passport:any;
-})
-{
+passport,
+}: {
+passport: Passport;
+}) {
 
 
-const [role,setRole] = useState<Role|null>(null);
-
-
-
-useEffect(()=>{
-
-  getUserRole()
-  .then((r)=>{
-
-    console.log(
-      "ROLE:",
-      r
-    );
-
-    setRole(
-      r as Role
-    );
-
-  });
-
-
-},[]);
-
-
-
-if(!role){
-
-  return (
-    <p>
-      Loading permissions...
-    </p>
-  );
-
-}
-
+const role =
+useRoleStore(
+(state)=>state.role
+);
 
 
 const allowed =
-passportPermissions[role];
+passportPermissions[role as Role]
+||
+passportPermissions.Manufacturer;
 
 
 
 return (
 
 <Tabs
- defaultValue="overview"
- className="space-y-4"
+defaultValue="overview"
+className="space-y-4"
 >
 
 
-<TabsList className="flex flex-wrap">
+<TabsList>
 
-{
-allowed.includes("overview") &&
+
+{allowed.includes("overview") && (
 <TabsTrigger value="overview">
 Overview
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("composition") &&
+{allowed.includes("composition") && (
 <TabsTrigger value="composition">
 Composition
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("performance") &&
+{allowed.includes("performance") && (
 <TabsTrigger value="performance">
 Performance
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("provenance") &&
+{allowed.includes("provenance") && (
 <TabsTrigger value="provenance">
 Provenance
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("circularity") &&
+{allowed.includes("circularity") && (
 <TabsTrigger value="circularity">
 Circularity
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("compliance") &&
+{allowed.includes("compliance") && (
 <TabsTrigger value="compliance">
 Compliance
 </TabsTrigger>
-}
+)}
 
 
-{
-allowed.includes("verification") &&
+{allowed.includes("verification") && (
 <TabsTrigger value="verification">
 Verification
 </TabsTrigger>
-}
+)}
 
 
 </TabsList>
 
 
 
-{/* ================= OVERVIEW ================= */}
-
-
 <TabsContent value="overview">
-
 
 <Card>
 
@@ -175,14 +134,7 @@ Passport Overview
 </CardHeader>
 
 
-<CardContent>
-
-
-<div className="grid gap-6 md:grid-cols-2">
-
-
-
-<div className="space-y-4">
+<CardContent className="space-y-4">
 
 
 <div>
@@ -191,7 +143,7 @@ Passport Overview
 Passport ID
 </p>
 
-<p className="font-medium">
+<p className="font-semibold">
 {passport.passport_id}
 </p>
 
@@ -202,120 +154,11 @@ Passport ID
 <div>
 
 <p className="text-sm text-muted-foreground">
-Magnet Type
+Status
 </p>
 
-<p className="font-medium">
-{passport.magnet_type}
-</p>
-
-</div>
-
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Application Sector
-</p>
-
-<p className="font-medium">
-{passport.application_sector}
-</p>
-
-</div>
-
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Manufacturing Date
-</p>
-
-<p className="font-medium">
-{passport.manufacturing_date}
-</p>
-
-</div>
-
-
-</div>
-
-
-
-
-<div className="space-y-4">
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Current Stage
-</p>
-
-<p className="font-medium">
-{passport.current_stage}
-</p>
-
-</div>
-
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Country of Origin
-</p>
-
-<p className="font-medium">
-{passport.country_of_origin}
-</p>
-
-</div>
-
-
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Recycled Content
-</p>
-
-<p className="font-medium">
-{passport.recycled_content}%
-</p>
-
-</div>
-
-
-
-
-<div>
-
-<p className="text-sm text-muted-foreground">
-Carbon Footprint
-</p>
-
-<p className="font-medium">
-{passport.carbon_footprint} kg CO₂e
-</p>
-
-</div>
-
-
-
-</div>
-
-
-</div>
-
-
-<div className="mt-6">
 
 <Badge>
-
 {
 passport.status
 ?
@@ -323,205 +166,54 @@ passport.status
 :
 "Pending"
 }
-
 </Badge>
+
 
 </div>
 
 
 </CardContent>
 
+
 </Card>
 
 
 </TabsContent>
 
-
-
-
-
-{/* ================= COMPOSITION ================= */}
 
 
 <TabsContent value="composition">
-
-<Card>
-  <CardHeader>
-    <CardTitle>
-      Material Composition
-    </CardTitle>
-  </CardHeader>
-
-  <CardContent>
-
-        <Composition
-  passportId={passport.id}
-/>
-
-  </CardContent>
-
-</Card>
-
+<Composition passportId={passport.id}/>
 </TabsContent>
 
 
-
-
-
-{/* ================= PERFORMANCE ================= */}
 <TabsContent value="performance">
-
-<Card>
-
-<CardHeader>
-
-<CardTitle>
-Performance
-</CardTitle>
-
-</CardHeader>
-
-
-<CardContent>
-
-<Performance
- passportId={passport.id}
-/>
-
-</CardContent>
-
-</Card>
-
+<Performance passportId={passport.id}/>
 </TabsContent>
-
-
-{/* ================= PROVENANCE ================= */}
 
 
 <TabsContent value="provenance">
-
-
-<Card>
-
-<CardHeader>
-
-<CardTitle>
-Provenance
-</CardTitle>
-
-</CardHeader>
-
-
-<CardContent>
-
-<p className="text-sm text-muted-foreground">
-Supply chain provenance information.
-</p>
-
-</CardContent>
-
-</Card>
-
-
+<Provenance passportId={passport.id}/>
 </TabsContent>
 
-
-
-
-
-
-{/* ================= CIRCULARITY ================= */}
 
 <TabsContent value="circularity">
-
-  <Card>
-
-    <CardHeader>
-
-      <CardTitle>
-        Circularity
-      </CardTitle>
-
-    </CardHeader>
-
-
-    <CardContent>
-
-      <Circularity
-        passportId={passport.id}
-      />
-
-    </CardContent>
-
-
-  </Card>
-
-
+<Circularity passportId={passport.id}/>
 </TabsContent>
-
-
-
-{/* ================= COMPLIANCE ================= */}
 
 
 <TabsContent value="compliance">
-
-<Card>
-
-<CardHeader>
-
-<CardTitle>
-Compliance Information
-</CardTitle>
-
-</CardHeader>
-
-
-<CardContent>
-
-<Compliance
- passportId={passport.id}
-/>
-
-</CardContent>
-
-
-</Card>
-
+<Compliance passportId={passport.id}/>
 </TabsContent>
 
-
-{/* ================= VERIFICATION ================= */}
 
 <TabsContent value="verification">
-
-  <Card>
-
-    <CardHeader>
-
-      <CardTitle>
-        Verification Claims
-      </CardTitle>
-
-    </CardHeader>
-
-
-    <CardContent>
-
-      <Verification
-        passportId={passport.id}
-      />
-
-    </CardContent>
-
-
-  </Card>
-
+<Verification passportId={passport.id}/>
 </TabsContent>
-
 
 
 </Tabs>
+
 
 );
 

@@ -1,43 +1,49 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 
 export type UserRole =
- | "Manufacturer"
- | "Recycler"
- | "Auditor"
- | "Regulator"
- | "Admin"
- | "Public";
-
+  | "Manufacturer"
+  | "Recycler"
+  | "Auditor"
+  | "Regulator"
+  | "Admin"
+  | "Public";
 
 
 interface RoleStore {
 
- role:UserRole;
+  role: UserRole;
 
- setRole:(role:UserRole)=>void;
+  setRole:(role:UserRole)=>void;
 
- resetRole:()=>void;
+  resetRole:()=>void;
 
 }
 
 
-
 export const useRoleStore =
-create<RoleStore>((set)=>({
+create<RoleStore>()(
+  persist(
+    (set)=>({
 
- role:"Public",
+      role:"Public",
 
+      setRole:(role)=>
+        set({
+          role
+        }),
 
- setRole:(role)=>
- set({
-   role
- }),
+      resetRole:()=>
+        set({
+          role:"Public"
+        })
 
+    }),
 
- resetRole:()=>
- set({
-   role:"Public"
- })
+    {
+      name:"role-storage"
+    }
 
-}));
+  )
+);

@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 // --------------------
 
 export async function getPassportComposition(
-  id:number
-){
+  id: number
+) {
 
   const supabase = createClient();
 
@@ -25,18 +25,6 @@ export async function getPassportComposition(
 
 
   console.log(
-    "DATABASE COMPOSITION QUERY:",
-    id
-  );
-
-
-   console.log(
-    "QUERY PASSPORT MATERIAL ID:",
-    id
-  );
-
-
-  console.log(
     "COMPOSITION DATA:",
     data
   );
@@ -46,6 +34,7 @@ export async function getPassportComposition(
     "COMPOSITION ERROR:",
     error
   );
+
 
   if(error){
     throw error;
@@ -57,12 +46,13 @@ export async function getPassportComposition(
 }
 
 
+
 // --------------------
 // Performance
 // --------------------
 
 export async function getPassportPerformance(
-  id: number
+  id:number
 ) {
 
   const supabase = createClient();
@@ -74,30 +64,36 @@ export async function getPassportPerformance(
   } = await supabase
     .from("passport_material")
     .select(
-      `
+`
       magnet_grade,
       coercivity,
       remanence,
       temperature_class
-      `
+`
     )
     .eq(
       "passport_id",
       id
     )
+    .maybeSingle();
+
 
 
   console.log(
     "PERFORMANCE RESULT:",
-    data,
+    data
+  );
+
+
+  console.log(
+    "PERFORMANCE ERROR:",
     error
   );
 
 
+
   if(error){
-
     throw error;
-
   }
 
 
@@ -105,8 +101,10 @@ export async function getPassportPerformance(
 
 }
 
+
+
 // --------------------
-// Circularity
+// Circularity / Sustainability
 // --------------------
 
 export async function getPassportCircularity(
@@ -122,12 +120,12 @@ export async function getPassportCircularity(
   } = await supabase
     .from("passport_sustainability")
     .select(
-      `
+`
       recycled_content,
       carbon_footprint,
       radioactivity,
       conflict_mineral_status
-      `
+`
     )
     .eq(
       "passport_id",
@@ -135,11 +133,6 @@ export async function getPassportCircularity(
     )
     .maybeSingle();
 
-
-  console.log(
-    "CIRCULARITY QUERY ID:",
-    id
-  );
 
 
   console.log(
@@ -154,14 +147,18 @@ export async function getPassportCircularity(
   );
 
 
+
   if(error){
     throw error;
   }
 
 
-  return data;
+  return data ?? null;
 
 }
+
+
+
 // --------------------
 // Compliance
 // --------------------
@@ -186,33 +183,27 @@ export async function getPassportCompliance(
 
 
   console.log(
-    "COMPLIANCE QUERY ID:",
-    id
-  );
-
-
-  console.log(
-    "COMPLIANCE DATA FROM DB:",
+    "COMPLIANCE DATA:",
     data
   );
 
 
   console.log(
-    "COMPLIANCE ERROR FROM DB:",
+    "COMPLIANCE ERROR:",
     error
   );
 
 
   if(error){
-
     throw error;
-
   }
 
 
   return data ?? [];
 
 }
+
+
 
 // --------------------
 // Verification Claims
@@ -231,12 +222,12 @@ export async function getVerificationClaims(
   } = await supabase
     .from("verification_claim")
     .select(
-      `
+`
       claim_id,
       claim_type,
       result,
       verification_date
-      `
+`
     )
     .eq(
       "passport_id",
@@ -249,12 +240,6 @@ export async function getVerificationClaims(
       }
     );
 
-
-
-  console.log(
-    "VERIFICATION QUERY ID:",
-    id
-  );
 
 
   console.log(
@@ -271,15 +256,16 @@ export async function getVerificationClaims(
 
 
   if(error){
-
     throw error;
-
   }
 
 
   return data ?? [];
 
 }
+
+
+
 
 // --------------------
 // Passport Lineage
@@ -292,123 +278,191 @@ export async function getPassportLineage(
   const supabase = createClient();
 
 
+
   const {
     data,
     error
   } = await supabase
     .from("passport_lineage")
-    .select(`
+    .select(
+`
       id,
-      source_passport_id,
-      target_passport_id,
+      relationship_type,
       recovery_method,
-      generation_number
-    `)
+      generation_number,
+
+      source_passport:passport!passport_lineage_source_passport_id_fkey(
+        id,
+        passport_id
+      ),
+
+      target_passport:passport!passport_lineage_target_passport_id_fkey(
+        id,
+        passport_id
+      )
+`
+    )
     .or(
       `source_passport_id.eq.${passportId},target_passport_id.eq.${passportId}`
-    )
-    .order(
-      "id",
-      {
-        ascending:true
-      }
     );
 
 
+
   console.log(
-    "LINEAGE API RESULT:",
+    "LINEAGE DATA:",
     data
   );
 
 
   console.log(
-    "LINEAGE API ERROR:",
+    "LINEAGE ERROR:",
     error
   );
 
 
+
   if(error){
-
     throw error;
-
   }
 
 
   return data ?? [];
 
 }
+
+
+
+
 // --------------------
 // Circularity Dashboard
 // --------------------
 
 export async function getCircularityDashboard(
- passportId:number
+  passportId:number
 ){
 
- const supabase=createClient();
+  const supabase = createClient();
 
 
 
- const {
-  data:sustainability
- } = await supabase
- .from("passport_sustainability")
- .select("*")
- .eq(
-  "passport_id",
-  passportId
- )
- .single();
+  const {
+    data:sustainability,
+    error:sustainabilityError
+  } = await supabase
+    .from("passport_sustainability")
+    .select("*")
+    .eq(
+      "passport_id",
+      passportId
+    )
+    .maybeSingle();
 
 
 
+  console.log(
+    "SUSTAINABILITY:",
+    sustainability
+  );
 
 
- const {
-  data:lineage
- } = await supabase
- .from("passport_lineage")
- .select("*")
- .eq(
-  "target_passport_id",
-  passportId
- );
-
-
-
-
-
- const {
-  data:events
- } = await supabase
- .from("passport_event")
- .select("*")
- .eq(
-  "passport_id",
-  passportId
- )
- .order(
-  "event_date",
-  {
-   ascending:true
-  }
- );
+  console.log(
+    "SUSTAINABILITY ERROR:",
+    sustainabilityError
+  );
 
 
 
 
- return {
+  const {
+    data:lineage,
+    error:lineageError
+  } = await supabase
+    .from("passport_lineage")
+    .select(
+`
+      id,
+      relationship_type,
+      recovery_method,
+      generation_number,
 
-  sustainability:
-   sustainability ?? null,
+      source_passport:passport!passport_lineage_source_passport_id_fkey(
+        id,
+        passport_id
+      ),
 
-  lineage:
-   lineage ?? [],
+      target_passport:passport!passport_lineage_target_passport_id_fkey(
+        id,
+        passport_id
+      )
+`
+    )
+    .eq(
+      "target_passport_id",
+      passportId
+    );
 
-  events:
-   events ?? []
 
- };
 
+  console.log(
+    "LINEAGE:",
+    lineage
+  );
+
+
+  console.log(
+    "LINEAGE ERROR:",
+    lineageError
+  );
+
+
+
+
+  const {
+    data:events,
+    error:eventError
+  } = await supabase
+    .from("passport_event")
+    .select("*")
+    .eq(
+      "passport_id",
+      passportId
+    )
+    .order(
+      "event_date",
+      {
+        ascending:true
+      }
+    );
+
+
+
+  console.log(
+    "EVENTS:",
+    events
+  );
+
+
+  console.log(
+    "EVENT ERROR:",
+    eventError
+  );
+
+
+
+
+  return {
+
+    sustainability:
+      sustainability ?? null,
+
+
+    lineage:
+      lineage ?? [],
+
+
+    events:
+      events ?? []
+
+  };
 
 }

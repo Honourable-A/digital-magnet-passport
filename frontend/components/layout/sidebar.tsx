@@ -1,12 +1,8 @@
 "use client";
 
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useRoleStore
-} from "@/store/role-store";
-
+import { useRoleStore } from "@/store/role-store";
 
 import {
   Bot,
@@ -21,237 +17,210 @@ import {
 } from "lucide-react";
 
 
-
 const navigation = [
+  {
+    name: "Create Passport",
+    href: "/create-passport",
+    icon: PlusCircle,
+    roles: ["Manufacturer", "Admin"],
+  },
 
   {
-    name:"Create Passport",
-    href:"/create-passport",
-    icon:PlusCircle,
-    roles:[
+    name: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    roles: [
       "Manufacturer",
-      "Admin"
-    ]
+      "Recycler",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Dashboard",
-    href:"/dashboard",
-    icon:LayoutDashboard,
+    name: "Passports",
+    href: "/passport",
+    icon: FileText,
+    roles: [
+      "Manufacturer",
+      "Recycler",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Passports",
-    href:"/passport",
-    icon:FileText,
+    name: "Provenance Network",
+    href: "/provenance",
+    icon: GitBranch,
+    roles: [
+      "Manufacturer",
+      "Recycler",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Provenance Network",
-    href:"/provenance",
-    icon:GitBranch,
+    name: "Verification",
+    href: "/verification",
+    icon: ShieldCheck,
+    roles: [
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Verification",
-    href:"/verification",
-    icon:ShieldCheck,
+    name: "Compliance",
+    href: "/compliance",
+    icon: ClipboardCheck,
+    roles: [
+      "Manufacturer",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Compliance",
-    href:"/compliance",
-    icon:ClipboardCheck,
+    name: "Circularity",
+    href: "/circularity",
+    icon: Recycle,
+    roles: [
+      "Recycler",
+      "Manufacturer",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Circularity",
-    href:"/circularity",
-    icon:Recycle,
+    name: "Blockchain",
+    href: "/blockchain",
+    icon: Blocks,
+    roles: [
+      "Regulator",
+      "Admin",
+    ],
   },
-
 
   {
-    name:"Blockchain",
-    href:"/blockchain",
-    icon:Blocks,
+    name: "AI Assistant",
+    href: "/assistant",
+    icon: Bot,
+    roles: [
+      "Manufacturer",
+      "Recycler",
+      "Auditor",
+      "Regulator",
+      "Admin",
+    ],
   },
-
-
-  {
-    name:"AI Assistant",
-    href:"/assistant",
-    icon:Bot,
-  },
-
 ];
 
 
+export function Sidebar() {
+
+  const pathname = usePathname();
+
+  const role = useRoleStore(
+    (state) => state.role
+  );
 
 
-
-export function Sidebar(){
-
-
-const pathname = usePathname();
-
-const role = useRoleStore(
-(state)=>state.role
-);
-
-
-return (
-
-<aside className="
-hidden
-sticky
-top-0
-h-screen
-w-64
-border-r
-bg-background
-md:flex
-md:flex-col
-">
-
-
-
-<div className="
-border-b
-px-6
-py-5
-">
-
-<h1 className="
-text-lg
-font-semibold
-">
-
-TRACE4MAGNET
-
-</h1>
-
-
-<p className="
-text-sm
-text-muted-foreground
-">
-
-Digital Magnet Passport
-
-</p>
-
-
-</div>
-
-
-
-
-
-<nav className="
-flex-1
-overflow-y-auto
-p-4
-space-y-1
-">
-
-{
-navigation
-.filter((item)=>{
-
-  if(!item.roles){
-
-    return true;
-
+  if (!role) {
+    return null;
   }
 
 
-  return item.roles.includes(role);
-
-})
-.map((item)=>{
-
-
-const Icon=item.icon;
+  const allowedNavigation =
+    navigation.filter((item) =>
+      item.roles.includes(role)
+    );
 
 
+  return (
 
-const isActive =
-pathname===item.href ||
-pathname.startsWith(
-`${item.href}/`
-);
+    <aside className="w-64 border-r bg-background">
 
+      <div className="p-6">
 
+        <h1 className="text-xl font-bold">
+          TRACE4MAGNET
+        </h1>
 
-return (
+        <p className="text-sm text-muted-foreground">
+          Digital Magnet Passport
+        </p>
 
-
-<Link
-
-key={item.href}
-
-href={item.href}
-
-className={`
-flex
-items-center
-gap-3
-rounded-md
-px-3
-py-2
-text-sm
-font-medium
-transition
-
-${
-isActive
-?
-"bg-primary text-primary-foreground"
-:
-"text-muted-foreground hover:bg-muted hover:text-foreground"
-}
-
-`}
-
->
+      </div>
 
 
-<Icon
-className="h-4 w-4"
-/>
+      <nav className="space-y-1 px-4">
+
+        {
+          allowedNavigation.map((item)=>{
+
+            const Icon = item.icon;
+
+            const isActive =
+              pathname === item.href ||
+              pathname.startsWith(
+                `${item.href}/`
+              );
 
 
-{item.name}
+            return (
 
+              <Link
 
-</Link>
+                key={item.href}
 
+                href={item.href}
 
-);
+                className={`
+                  flex
+                  items-center
+                  gap-3
+                  rounded-md
+                  px-3
+                  py-2
+                  text-sm
+                  font-medium
+                  transition
 
+                  ${
+                    isActive
+                    ?
+                    "bg-primary text-primary-foreground"
+                    :
+                    "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }
+                `}
 
-})
+              >
 
+                <Icon size={18}/>
 
-}
+                {item.name}
 
+              </Link>
 
+            );
 
-</nav>
+          })
+        }
 
+      </nav>
 
+    </aside>
 
-</aside>
-
-
-);
-
+  );
 
 }

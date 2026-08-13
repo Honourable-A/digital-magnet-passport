@@ -95,18 +95,6 @@ export default function ComplianceSelector({
               </p>
             </div>
 
-
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Carbon Footprint
-              </p>
-
-              <p className="font-medium">
-                {passport.carbon_footprint} kg CO₂e
-              </p>
-            </div>
-
-
             <div>
               <p className="text-sm text-muted-foreground">
                 Status

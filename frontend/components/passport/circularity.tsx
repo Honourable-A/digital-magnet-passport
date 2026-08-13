@@ -1,43 +1,63 @@
 "use client";
 
-
 import {
   useEffect,
   useState
 } from "react";
 
-
 import {
   getPassportCircularity
 } from "@/lib/api/passport-details";
 
-
 import Timeline from "@/components/circularity/timeline";
-
 import PassportLineage from "@/components/circularity/passport-lineage";
 
 
+interface CircularityData {
+
+  recycled_content?: number | null;
+
+  carbon_footprint?: number | null;
+
+  radioactivity?: number | null;
+
+  conflict_mineral_status?: string | null;
+
+  lineage?: any[];
+
+}
+
+
+
 export default function Circularity({
-  passportId
-}:{
-  passportId:number;
-}){
+  passportId,
+}: {
+  passportId: number;
+}) {
 
 
-  const [data,setData] =
-    useState<any>(null);
+  const [
+    data,
+    setData
+  ] = useState<any>(null);
 
 
-  const [loading,setLoading] =
-    useState(true);
 
-  useEffect(()=>{
-
-
-    async function load(){
+  const [
+    loading,
+    setLoading
+  ] = useState(true);
 
 
-      try{
+
+
+  useEffect(() => {
+
+
+    async function loadCircularity() {
+
+
+      try {
 
 
         const result =
@@ -52,11 +72,12 @@ export default function Circularity({
         );
 
 
-        setData(result);
+        setData(
+          result
+        );
 
 
-      }
-      catch(error){
+      } catch (error) {
 
 
         console.error(
@@ -65,44 +86,59 @@ export default function Circularity({
         );
 
 
-        setData(null);
+        setData(
+          null
+        );
+
+
+      } finally {
+
+
+        setLoading(
+          false
+        );
 
 
       }
-      finally{
-
-
-        setLoading(false);
-
-
-      }
-
 
     }
 
 
+    loadCircularity();
 
-    load();
 
-
-  },[passportId]);
-
+  }, [passportId]);
 
 
 
 
-  if(loading){
+
+  if (loading) {
 
 
     return (
 
       <p className="text-sm text-muted-foreground">
-        Loading circularity...
+        Loading circularity data...
       </p>
 
     );
 
   }
+
+
+
+
+
+  const lineage =
+    data?.lineage ?? [];
+
+
+
+  const generation =
+    lineage.length > 0
+      ? lineage[0]?.generation_number
+      : null;
 
 
 
@@ -114,120 +150,108 @@ export default function Circularity({
 
 
 
-      {/* Sustainability Metrics */}
-
-      {
-        data
-        ?
-
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
 
 
 
-          <div className="rounded-lg border p-4">
-
-            <p className="text-sm text-muted-foreground">
-              Recycled Content
-            </p>
+        <div className="rounded-lg border p-4">
 
 
-            <p className="mt-1 font-semibold">
-              {data.recycled_content}%
-            </p>
-
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Recycled Content
+          </p>
 
 
+          <p className="mt-2 text-2xl font-semibold">
 
+            {
+              data?.recycled_content !== null &&
+              data?.recycled_content !== undefined
 
+              ? `${data.recycled_content}%`
 
-          <div className="rounded-lg border p-4">
+              : "Not available"
+            }
 
-            <p className="text-sm text-muted-foreground">
-              Carbon Footprint
-            </p>
-
-
-            <p className="mt-1 font-semibold">
-              {data.carbon_footprint}
-            </p>
-
-          </div>
-
-
-
-
-
-          <div className="rounded-lg border p-4">
-
-            <p className="text-sm text-muted-foreground">
-              Radioactivity
-            </p>
-
-
-            <p className="mt-1 font-semibold">
-              {data.radioactivity}
-            </p>
-
-          </div>
-
-
-
-
-
-          <div className="rounded-lg border p-4">
-
-            <p className="text-sm text-muted-foreground">
-              Conflict Mineral Status
-            </p>
-
-
-            <p className="mt-1 font-semibold">
-              {data.conflict_mineral_status}
-            </p>
-
-          </div>
-
-
-
-        </div>
-
-
-        :
-
-        <div className="rounded-lg border p-6">
-
-
-          <h3 className="font-semibold">
-            No Sustainability Data
-          </h3>
-
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            No circularity metrics have been registered
-            for this passport.
           </p>
 
 
         </div>
 
-      }
+
+
+
+
+
+        <div className="rounded-lg border p-4">
+
+
+          <p className="text-sm text-muted-foreground">
+            Carbon Footprint
+          </p>
+
+
+          <p className="mt-2 text-2xl font-semibold">
+
+
+            {
+              data?.carbon_footprint !== null &&
+              data?.carbon_footprint !== undefined
+
+              ? `${data.carbon_footprint} kg CO₂e`
+
+              : "Not available"
+            }
+
+
+          </p>
+
+
+        </div>
 
 
 
 
 
 
+        <div className="rounded-lg border p-4">
 
-      {/* Lifecycle Timeline */}
+
+          <p className="text-sm text-muted-foreground">
+            Generation Number
+          </p>
+
+
+          <p className="mt-2 text-2xl font-semibold">
+
+
+            {
+              generation
+                ? generation
+                : "Not available"
+            }
+
+
+          </p>
+
+
+        </div>
+
+
+
+      </div>
+
+
+
 
 
       <div className="rounded-lg border p-6">
 
 
-        <h3 className="font-semibold mb-4">
+        <h3 className="mb-4 font-semibold">
           Circularity Lifecycle
         </h3>
+
 
 
         <Timeline
@@ -237,34 +261,48 @@ export default function Circularity({
 
       </div>
 
+<div className="rounded-lg border p-6">
+
+  <h3 className="mb-4 font-semibold">
+    Passport Lineage
+  </h3>
 
 
+  <PassportLineage
+    data={data?.lineage || []}
+  />
+
+</div>
 
 
+          :
+
+          (
+
+            <div>
 
 
-      {/* Recycling Lineage */}
+              <h3 className="font-semibold">
+                No Recycling Lineage Found
+              </h3>
 
 
-      <div className="rounded-lg border p-6">
+              <p className="mt-2 text-sm text-muted-foreground">
+
+                This passport has not generated any recycled
+                material lineage records yet.
+
+              </p>
 
 
-        <h3 className="font-semibold mb-4">
-          Passport Lineage
-        </h3>
-
-            <PassportLineage
-        data={data?.lineage ?? []}
-      />
             </div>
 
+          )
 
+    
 
-
-
-    </div>
+      </div>
 
   );
-
 
 }

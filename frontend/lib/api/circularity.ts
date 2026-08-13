@@ -18,18 +18,31 @@ export async function getPassportSustainability(
   } = await supabase
     .from("passport_sustainability")
     .select(
-      `
+`
       recycled_content,
       carbon_footprint,
       radioactivity,
       conflict_mineral_status
-      `
+`
     )
     .eq(
       "passport_id",
       passportId
     )
-    .single();
+    .maybeSingle();
+
+
+
+  console.log(
+    "SUSTAINABILITY DATA:",
+    data
+  );
+
+
+  console.log(
+    "SUSTAINABILITY ERROR:",
+    error
+  );
 
 
 
@@ -38,7 +51,7 @@ export async function getPassportSustainability(
   }
 
 
-  return data;
+  return data ?? null;
 
 }
 
@@ -55,18 +68,19 @@ export async function getPassportEvents(
   const supabase = createClient();
 
 
+
   const {
     data,
     error
   } = await supabase
     .from("passport_event")
     .select(
-      `
+`
       id,
       event_type,
       event_date,
       notes
-      `
+`
     )
     .eq(
       "passport_id",
@@ -78,6 +92,20 @@ export async function getPassportEvents(
         ascending:true
       }
     );
+
+
+
+  console.log(
+    "EVENT DATA:",
+    data
+  );
+
+
+  console.log(
+    "EVENT ERROR:",
+    error
+  );
+
 
 
   if(error){
@@ -102,24 +130,47 @@ export async function getPassportLineage(
   const supabase = createClient();
 
 
+
   const {
     data,
     error
   } = await supabase
     .from("passport_lineage")
     .select(
-      `
+`
       id,
       relationship_type,
       recovery_method,
       generation_number,
-      source_passport_id,
-      target_passport_id
-      `
+
+      source_passport:passport!passport_lineage_source_passport_id_fkey(
+        id,
+        passport_id
+      ),
+
+      target_passport:passport!passport_lineage_target_passport_id_fkey(
+        id,
+        passport_id
+      )
+`
     )
     .or(
       `source_passport_id.eq.${passportId},target_passport_id.eq.${passportId}`
     );
+
+
+
+  console.log(
+    "LINEAGE DATA:",
+    data
+  );
+
+
+  console.log(
+    "LINEAGE ERROR:",
+    error
+  );
+
 
 
   if(error){

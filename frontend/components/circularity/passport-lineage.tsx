@@ -1,257 +1,224 @@
 "use client";
 
-
 import {
-  ArrowDown,
   FileText,
-  Recycle
+  Recycle,
+  ArrowDown,
 } from "lucide-react";
 
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+interface LineageItem {
+
+  id: number;
+
+  source_passport_id: number;
+
+  target_passport_id: number;
+
+  relationship_type: string;
+
+  recovery_method: string | null;
+
+  generation_number: number | null;
 
 
-
-type LineageItem = {
-
-  id:number;
-
-  source_passport_id:number;
-
-  target_passport_id:number;
-
-  recovery_method:string;
-
-  generation_number:number;
-
-};
+  source_passport?: {
+    passport_id: string;
+  };
 
 
+  target_passport?: {
+    passport_id: string;
+  };
 
-type Props = {
-
-  data:LineageItem[];
-
-};
+}
 
 
 
 export default function PassportLineage({
+  data,
+}: {
+  data: LineageItem[];
+}) {
 
-  data
 
-}:Props){
+  if (!data || data.length === 0) {
 
+    return (
 
+      <div className="rounded-lg border p-6">
 
+        <h3 className="font-semibold">
+          No Recycling Lineage Found
+        </h3>
 
 
-if(!data || data.length===0){
+        <p className="mt-2 text-sm text-muted-foreground">
+          This passport has not generated any recycled material lineage records yet.
+        </p>
 
+      </div>
 
-return (
+    );
 
-<Card>
+  }
 
-<CardHeader>
 
-<CardTitle>
-Passport Lineage
-</CardTitle>
 
-</CardHeader>
+  return (
 
+    <div className="space-y-6">
 
-<CardContent>
 
-<p className="text-muted-foreground">
-No recycling lineage has been registered for this passport.
-</p>
+      {
+        data.map((item) => {
 
-</CardContent>
 
+          const sourceId =
+            item.source_passport?.passport_id
+            ??
+            `DMP-${String(item.source_passport_id).padStart(4, "0")}`;
 
-</Card>
 
-);
+          const targetId =
+            item.target_passport?.passport_id
+            ??
+            `DMP-${String(item.target_passport_id).padStart(4, "0")}`;
 
 
-}
 
+          return (
 
+            <div
+              key={item.id}
+              className="flex flex-col items-center gap-3"
+            >
 
 
+              {/* Source Passport */}
 
+              <div className="w-full max-w-md rounded-lg border p-5">
 
-return (
 
-<Card>
+                <div className="flex items-center gap-3">
 
+                  <FileText className="h-5 w-5"/>
 
-<CardHeader>
 
-<CardTitle>
-Passport Lineage
-</CardTitle>
+                  <div>
 
-</CardHeader>
+                    <p className="text-sm text-muted-foreground">
+                      Source Passport
+                    </p>
 
 
+                    <p className="font-semibold">
+                      {sourceId}
+                    </p>
 
-<CardContent className="space-y-6">
+                  </div>
 
+                </div>
 
 
-{
-data.map(
-(item)=>(
+              </div>
 
 
-<div
-key={item.id}
-className="flex flex-col items-center"
->
 
+              <ArrowDown className="h-6 w-6"/>
 
 
-<div className="w-full max-w-md rounded-xl border p-5">
 
+              {/* Recycled Passport */}
 
-<div className="flex items-center gap-3">
+              <div className="w-full max-w-md rounded-lg border p-5">
 
 
-<FileText className="h-6 w-6"/>
+                <div className="flex items-center gap-3">
 
 
-<div>
+                  <Recycle className="h-5 w-5"/>
 
 
-<p className="text-sm text-muted-foreground">
-Source Passport
-</p>
+                  <div>
 
+                    <p className="text-sm text-muted-foreground">
+                      Recycled Passport
+                    </p>
 
-<p className="text-xl font-semibold">
-DMP-{String(item.source_passport_id).padStart(4,"0")}
-</p>
 
+                    <p className="font-semibold">
+                      {targetId}
+                    </p>
 
-</div>
+                  </div>
 
 
-</div>
+                </div>
 
 
-</div>
 
+                <div className="mt-4 grid grid-cols-2 gap-3">
 
 
+                  <div className="rounded-md border p-3">
 
+                    <p className="text-xs text-muted-foreground">
+                      Recovery Method
+                    </p>
 
-<ArrowDown
-className="h-8 w-8 my-3"
-/>
 
+                    <p className="font-medium">
+                      {
+                        item.recovery_method
+                        ??
+                        "Not available"
+                      }
+                    </p>
 
 
+                  </div>
 
 
 
-<div className="w-full max-w-md rounded-xl border p-5">
+                  <div className="rounded-md border p-3">
 
 
-<div className="flex items-center gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Generation
+                    </p>
 
 
-<Recycle className="h-6 w-6"/>
+                    <p className="font-medium">
 
+                      {
+                        item.generation_number
+                        ??
+                        "Not available"
+                      }
 
-<div>
+                    </p>
 
 
-<p className="text-sm text-muted-foreground">
-Recycled Passport
-</p>
+                  </div>
 
 
-<p className="text-xl font-semibold">
-DMP-{String(item.target_passport_id).padStart(4,"0")}
-</p>
+                </div>
 
 
-</div>
+              </div>
 
 
-</div>
+            </div>
 
+          );
 
+        })
+      }
 
 
+    </div>
 
-<div className="grid grid-cols-2 gap-4 mt-5">
-
-
-<div className="rounded-lg border p-3">
-
-<p className="text-sm text-muted-foreground">
-Recovery Method
-</p>
-
-
-<p className="font-semibold">
-{item.recovery_method}
-</p>
-
-</div>
-
-
-
-
-
-<div className="rounded-lg border p-3">
-
-
-<p className="text-sm text-muted-foreground">
-Generation
-</p>
-
-
-<p className="font-semibold">
-{item.generation_number}
-</p>
-
-
-</div>
-
-
-</div>
-
-
-
-</div>
-
-
-
-</div>
-
-
-)
-)
-}
-
-
-
-</CardContent>
-
-
-</Card>
-
-);
-
+  );
 
 }

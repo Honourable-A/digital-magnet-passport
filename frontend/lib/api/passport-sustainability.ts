@@ -1,37 +1,97 @@
-import { createClient } from "@/lib/supabase/client";
+import {
+  createClient
+} from "@/lib/supabase/client";
+
+
+
+export async function getPassportSustainability(
+  passportId:number
+){
+
+
+  const supabase = createClient();
+
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("passport_sustainability")
+    .select("*")
+    .eq(
+      "passport_id",
+      passportId
+    )
+    .single();
+
+
+
+  if(error){
+
+    console.error(
+      "GET SUSTAINABILITY ERROR:",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+
+  return data;
+
+}
+
+
+
+
 
 
 export async function createPassportSustainability(
-passportId:number
+  sustainabilityData:{
+    passport_id:number;
+    recycled_content:number;
+    carbon_footprint:number;
+    radioactivity:number;
+    conflict_mineral_status:string;
+  }
 ){
 
-const supabase=createClient();
+
+  const supabase = createClient();
 
 
-const {
-error
-}=await supabase
-.from("passport_sustainability")
-.insert([
-{
-passport_id:passportId,
 
-recycled_content:0,
-
-carbon_footprint:0,
-
-radioactivity:0,
-
-conflict_mineral_status:"Compliant"
-
-}
-]);
+  const {
+    data,
+    error
+  } = await supabase
+    .from("passport_sustainability")
+    .insert([
+      sustainabilityData
+    ])
+    .select()
+    .single();
 
 
-if(error){
 
-throw error;
 
-}
+  if(error){
+
+    console.error(
+      "CREATE SUSTAINABILITY ERROR:",
+      error
+    );
+
+
+    throw error;
+
+  }
+
+
+
+  return data;
+
 
 }
