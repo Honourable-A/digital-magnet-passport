@@ -2,15 +2,19 @@
 
 import {
   useEffect,
-  useState
+  useState,
 } from "react";
+
 
 import {
   getPassportCircularity
 } from "@/lib/api/passport-details";
 
+
 import Timeline from "@/components/circularity/timeline";
+
 import PassportLineage from "@/components/circularity/passport-lineage";
+
 
 
 interface CircularityData {
@@ -32,14 +36,14 @@ interface CircularityData {
 export default function Circularity({
   passportId,
 }: {
-  passportId: number;
+  passportId:number;
 }) {
 
 
   const [
     data,
     setData
-  ] = useState<any>(null);
+  ] = useState<CircularityData | null>(null);
 
 
 
@@ -50,14 +54,13 @@ export default function Circularity({
 
 
 
-
-  useEffect(() => {
-
-
-    async function loadCircularity() {
+  useEffect(()=>{
 
 
-      try {
+    async function loadCircularity(){
+
+
+      try{
 
 
         const result =
@@ -72,12 +75,11 @@ export default function Circularity({
         );
 
 
-        setData(
-          result
-        );
+        setData(result);
 
 
-      } catch (error) {
+      }
+      catch(error){
 
 
         console.error(
@@ -86,20 +88,18 @@ export default function Circularity({
         );
 
 
-        setData(
-          null
-        );
-
-
-      } finally {
-
-
-        setLoading(
-          false
-        );
+        setData(null);
 
 
       }
+      finally{
+
+
+        setLoading(false);
+
+
+      }
+
 
     }
 
@@ -107,14 +107,12 @@ export default function Circularity({
     loadCircularity();
 
 
-  }, [passportId]);
+  },[passportId]);
 
 
 
 
-
-  if (loading) {
-
+  if(loading){
 
     return (
 
@@ -125,8 +123,6 @@ export default function Circularity({
     );
 
   }
-
-
 
 
 
@@ -143,19 +139,18 @@ export default function Circularity({
 
 
 
-
   return (
 
     <div className="space-y-6">
 
 
 
+      {/* Circularity Summary */}
+
       <div className="grid gap-4 md:grid-cols-3">
 
 
-
         <div className="rounded-lg border p-4">
-
 
           <p className="text-sm text-muted-foreground">
             Recycled Content
@@ -182,7 +177,6 @@ export default function Circularity({
 
 
 
-
         <div className="rounded-lg border p-4">
 
 
@@ -193,7 +187,6 @@ export default function Circularity({
 
           <p className="mt-2 text-2xl font-semibold">
 
-
             {
               data?.carbon_footprint !== null &&
               data?.carbon_footprint !== undefined
@@ -203,12 +196,10 @@ export default function Circularity({
               : "Not available"
             }
 
-
           </p>
 
 
         </div>
-
 
 
 
@@ -224,13 +215,10 @@ export default function Circularity({
 
           <p className="mt-2 text-2xl font-semibold">
 
-
             {
-              generation
-                ? generation
-                : "Not available"
+              generation ??
+              "Not available"
             }
-
 
           </p>
 
@@ -238,12 +226,14 @@ export default function Circularity({
         </div>
 
 
-
       </div>
 
 
 
 
+
+
+      {/* Lifecycle */}
 
       <div className="rounded-lg border p-6">
 
@@ -261,48 +251,35 @@ export default function Circularity({
 
       </div>
 
-<div className="rounded-lg border p-6">
-
-  <h3 className="mb-4 font-semibold">
-    Passport Lineage
-  </h3>
 
 
-  <PassportLineage
-    data={data?.lineage || []}
-  />
-
-</div>
 
 
-          :
-
-          (
-
-            <div>
 
 
-              <h3 className="font-semibold">
-                No Recycling Lineage Found
-              </h3>
+      {/* Passport Lineage */}
+
+      <div className="rounded-lg border p-6">
 
 
-              <p className="mt-2 text-sm text-muted-foreground">
-
-                This passport has not generated any recycled
-                material lineage records yet.
-
-              </p>
+        <h3 className="mb-4 font-semibold">
+          Passport Lineage
+        </h3>
 
 
-            </div>
 
-          )
+        <PassportLineage
+          data={lineage}
+        />
 
-    
 
       </div>
 
+
+
+    </div>
+
   );
+
 
 }

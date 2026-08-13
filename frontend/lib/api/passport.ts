@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
+
+
 export interface Passport {
 
 id:number;
@@ -26,72 +28,87 @@ updated_at:string | null;
 }
 
 
-/*
-  Get all passports
 
-  Used by:
-  - /passport
-  - /circularity dropdown
-  - /verification dropdown
+export interface PassportEvent {
+
+id:number;
+
+passport_id:number;
+
+event_type:string;
+
+event_date:string;
+
+notes:string | null;
+
+performed_by:string | null;
+
+}
+
+
+/*
+Get all passports
+
+Used by:
+- /passport
+- /circularity dropdown
+- /verification dropdown
 */
 
 export async function getPassports(): Promise<Passport[]> {
 
-
-  const supabase = createClient();
-
+const supabase = createClient();
 
 
-  const {
-    data,
-    error
-  } = await supabase
-    .from("passport")
-    .select(
-      `
-      id,
-      passport_id,
-      magnet_type,
-      application_sector,
-      manufacturer,
-      country_of_origin,
-      manufacturing_date,
-      current_stage,
-      status,
-      created_at,
-      updated_at
-      `
-    )
-    .order(
-      "id",
-      {
-        ascending:true
-      }
-    );
+const {
+data,
+error
+} = await supabase
+.from("passport")
+.select(`
+id,
+passport_id,
+magnet_type,
+application_sector,
+manufacturer,
+country_of_origin,
+manufacturing_date,
+current_stage,
+status,
+created_at,
+updated_at
+`)
+.order(
+"id",
+{
+ascending:true
+}
+);
 
 
 
-  console.log(
-    "PASSPORT LIST ERROR:",
-    error
-  );
+console.log(
+"PASSPORT LIST ERROR:",
+error
+);
 
 
 
-  if(error){
+if(error){
 
-    throw error;
-
-  }
-  return data ?? [];
+throw error;
 
 }
+
+
+return data ?? [];
+
+}
+
+
+
 /*
 Get single passport
-
-Used by:
-
-/passport/[id]
 
 Supports:
 
@@ -100,316 +117,349 @@ Supports:
 */
 
 export async function getPassport(
-  passportIdentifier: string
-): Promise<Passport> {
-
-  const supabase = createClient();
-
-  console.log(
-    "LOOKING FOR PASSPORT:",
-    passportIdentifier
-  );
+passportIdentifier:string
+):Promise<Passport>{
 
 
-  const isNumeric = !isNaN(
-    Number(passportIdentifier)
-  );
-
-
-  let query = supabase
-    .from("passport")
-    .select(`
-      id,
-      passport_id,
-      magnet_type,
-      application_sector,
-      manufacturer,
-      country_of_origin,
-      manufacturing_date,
-      current_stage,
-      status,
-      created_at,
-      updated_at
-    `);
+const supabase=createClient();
 
 
 
-  if(isNumeric){
-
-    query = query.eq(
-      "id",
-      Number(passportIdentifier)
-    );
-
-  }else{
-
-    query = query.eq(
-      "passport_id",
-      passportIdentifier
-    );
-
-  }
+console.log(
+"LOOKING FOR PASSPORT:",
+passportIdentifier
+);
 
 
 
-  const {
-    data,
-    error
-  } = await query.maybeSingle();
+const isNumeric =
+!isNaN(
+Number(passportIdentifier)
+);
 
 
 
-  console.log(
-    "PASSPORT RESULT:",
-    data
-  );
+let query =
+supabase
+.from("passport")
+.select(`
+id,
+passport_id,
+magnet_type,
+application_sector,
+manufacturer,
+country_of_origin,
+manufacturing_date,
+current_stage,
+status,
+created_at,
+updated_at
+`);
 
 
-  console.log(
-    "PASSPORT ERROR:",
-    error
-  );
+
+if(isNumeric){
 
 
-
-  if(error || !data){
-
-    throw new Error(
-      "Passport not found"
-    );
-
-  }
+query =
+query.eq(
+"id",
+Number(passportIdentifier)
+);
 
 
-  return data;
+}
+else{
+
+
+query =
+query.eq(
+"passport_id",
+passportIdentifier
+);
+
 
 }
 
+
+
+const {
+data,
+error
+}=await query.maybeSingle();
+
+
+
+console.log(
+"PASSPORT RESULT:",
+data
+);
+
+
+console.log(
+"PASSPORT ERROR:",
+error
+);
+
+
+
+if(error || !data){
+
+throw new Error(
+"Passport not found"
+);
+
+}
+
+
+
+return data;
+
+}
+
+
+
 /*
-  Get passport dropdown data
+Get passport lifecycle events
 
-  Used by:
-  - Circularity
-  - Verification
-  - Compliance selectors
+Used by:
+- Passport timeline
+*/
 
-  Only returns required fields
+export async function getPassportEvents(
+passportId:number
+):Promise<PassportEvent[]>{
+
+
+const supabase=createClient();
+
+
+
+const {
+data,
+error
+}=await supabase
+.from("passport_event")
+.select(`
+id,
+passport_id,
+event_type,
+event_date,
+notes,
+performed_by
+`)
+.eq(
+"passport_id",
+passportId
+)
+.order(
+"event_date",
+{
+ascending:true
+}
+);
+
+
+
+if(error){
+
+
+console.error(
+"EVENT FETCH ERROR:",
+error
+);
+
+
+throw error;
+
+
+}
+
+
+
+return data ?? [];
+
+}
+
+
+
+/*
+Get passport dropdown data
+
+Used by:
+
+- Circularity
+- Verification
+- Compliance selectors
 */
 
 export async function getPassportOptions(){
 
 
-  const supabase=createClient();
+const supabase=createClient();
 
 
 
-  const {
-    data,
-    error
-  } = await supabase
-    .from("passport")
-    .select(
-      `
-      id,
-      passport_id
-      `
-    )
-    .order(
-      "id",
-      {
-        ascending:true
-      }
-    );
-
-
-
-  console.log(
-    "PASSPORT OPTIONS:",
-    data
-  );
-
-
-
-  console.log(
-    "PASSPORT OPTIONS ERROR:",
-    error
-  );
-
-
-
-  if(error){
-
-    throw error;
-
-  }
-
-
-
-  return data ?? [];
-
+const {
+data,
+error
+}=await supabase
+.from("passport")
+.select(`
+id,
+passport_id
+`)
+.order(
+"id",
+{
+ascending:true
 }
-
-///create passport///
-export async function createPassport(
-  passportData:{
-    passport_id:string;
-    magnet_type:string;
-    application_sector:string;
-    manufacturer:string;
-    country_of_origin:string;
-    manufacturing_date:string;
-    current_stage:string;
-  }
-){
-
-
-  const supabase = createClient();
-
-
-
-  // Get logged-in user
-
-  const {
-    data:userData,
-    error:userError
-  } = await supabase.auth.getUser();
-
-
-
-  if(userError || !userData.user){
-
-    throw new Error(
-      "User not authenticated"
-    );
-
-  }
-
-
-
-  console.log(
-    "SESSION USER:",
-    userData.user
-  );
-
-
-
-
-
-  // 1. Create passport
-
-
-  const {
-    data:passport,
-    error:passportError
-  } = await supabase
-    .from("passport")
-    .insert([
-      {
-        ...passportData,
-        status:true
-      }
-    ])
-    .select()
-    .single();
-
-
-
-
-  if(passportError){
-
-    console.error(
-      "PASSPORT CREATE ERROR:",
-      passportError
-    );
-
-    throw passportError;
-
-  }
-
-
-
-
-
-  console.log(
-    "CREATED PASSPORT:",
-    passport
-  );
-
-
-
-
-
-
-  // 2. Create initial lifecycle event
-
-
-  const {
-    error:eventError
-  } = await supabase
-    .from("passport_event")
-    .insert([
-      {
-        passport_id: passport.id,
-
-        event_type:"Manufactured",
-
-        performed_by:userData.user.id,
-
-        event_date:
-          passport.manufacturing_date ??
-          new Date().toISOString(),
-
-        notes:
-          "Magnet passport created and manufactured"
-      }
-    ]);
-
-
-
-
-
-
-  if(eventError){
-
-    console.error(
-      "PASSPORT EVENT CREATE ERROR:",
-      eventError
-    );
-
-
-    throw eventError;
-
-  }
-
-
-
-
-
-
-  console.log(
-"MANUFACTURED EVENT CREATED"
-);
-
-
-
-// 3. Create default material record
-
-await createPassportMaterial(
-  passport.id
-);
-
-
-
-// 4. Create default sustainability record
-
-await createPassportSustainability(
-  passport.id
 );
 
 
 
 console.log(
-"DEFAULT MATERIAL + SUSTAINABILITY CREATED"
+"PASSPORT OPTIONS:",
+data
+);
+
+
+
+console.log(
+"PASSPORT OPTIONS ERROR:",
+error
+);
+
+
+
+if(error){
+
+throw error;
+
+}
+
+
+
+return data ?? [];
+
+}
+
+
+
+/*
+Create passport
+*/
+
+export async function createPassport(
+passportData:{
+passport_id:string;
+magnet_type:string;
+application_sector:string;
+manufacturer:string;
+country_of_origin:string;
+manufacturing_date:string;
+current_stage:string;
+}
+){
+
+
+const supabase=createClient();
+
+
+
+const {
+data:userData,
+error:userError
+}=await supabase.auth.getUser();
+
+
+
+if(userError || !userData.user){
+
+throw new Error(
+"User not authenticated"
+);
+
+}
+
+
+
+const {
+data:passport,
+error:passportError
+}=await supabase
+.from("passport")
+.insert([
+{
+...passportData,
+status:true
+}
+])
+.select()
+.single();
+
+
+
+if(passportError){
+
+console.error(
+"PASSPORT CREATE ERROR:",
+passportError
+);
+
+
+throw passportError;
+
+}
+
+
+
+const {
+error:eventError
+}=await supabase
+.from("passport_event")
+.insert([
+{
+passport_id:passport.id,
+
+event_type:"Manufactured",
+
+performed_by:userData.user.id,
+
+event_date:
+passport.manufacturing_date ??
+new Date().toISOString(),
+
+notes:
+"Magnet passport created and manufactured"
+
+}
+]);
+
+
+
+if(eventError){
+
+console.error(
+"PASSPORT EVENT CREATE ERROR:",
+eventError
+);
+
+
+throw eventError;
+
+}
+
+
+
+await createPassportMaterial(
+passport.id
+);
+
+
+
+await createPassportSustainability(
+passport.id
 );
 
 
@@ -418,15 +468,20 @@ return passport;
 
 }
 
-//
+
+
+/*
+Create default material
+*/
+
 export async function createPassportMaterial(
-  passportId:number
+passportId:number
 ){
+
 
 const supabase=createClient();
 
 
-// Check if material already exists
 
 const {
 data:existing,
@@ -444,33 +499,19 @@ passportId
 
 if(checkError){
 
-console.error(
-"MATERIAL CHECK ERROR:",
-checkError
-);
-
 throw checkError;
 
 }
 
 
 
-// Prevent duplicate material creation
-
 if(existing){
-
-console.log(
-"MATERIAL ALREADY EXISTS FOR PASSPORT:",
-passportId
-);
 
 return existing;
 
 }
 
 
-
-// Create material record
 
 const {
 data,
@@ -479,6 +520,7 @@ error
 .from("passport_material")
 .insert([
 {
+
 passport_id:passportId,
 
 nd:25,
@@ -510,25 +552,29 @@ temperature_class:"150C"
 
 if(error){
 
-console.error(
-"MATERIAL CREATE ERROR:",
-error
-);
-
 throw error;
 
 }
 
 
+
 return data;
 
 }
-//
+
+
+
+/*
+Create default sustainability
+*/
+
 export async function createPassportSustainability(
 passportId:number
 ){
 
+
 const supabase=createClient();
+
 
 
 const {
@@ -544,60 +590,72 @@ passportId
 .maybeSingle();
 
 
-if(checkError){
 
-console.error(
-"SUSTAINABILITY CHECK ERROR:",
-checkError
-);
+if(checkError){
 
 throw checkError;
 
 }
 
 
-if(existing){
 
-console.log(
-"SUSTAINABILITY ALREADY EXISTS"
-);
+if(existing){
 
 return existing;
 
 }
 
 
+
 const {
+data,
 error
 }=await supabase
 .from("passport_sustainability")
 .insert([
 {
+
 passport_id:passportId,
+
 recycled_content:0,
+
 carbon_footprint:0,
+
 radioactivity:0,
+
 conflict_mineral_status:"Compliant"
+
 }
-]);
+])
+.select()
+.maybeSingle();
+
 
 
 if(error){
-
-console.error(
-"SUSTAINABILITY CREATE ERROR:",
-error
-);
 
 throw error;
 
 }
 
+
+
+return data;
+
 }
-////
+
+
+
+/*
+Generate next passport ID
+*/
+
 export async function getNextPassportId(){
 
+
 const supabase=createClient();
+
+
 
 const {
 count,
@@ -613,17 +671,23 @@ head:true
 );
 
 
+
 if(countError){
+
 throw countError;
+
 }
 
 
+
 const next =
-(count ?? 0) + 1;
+(count ?? 0)+1;
+
 
 
 const year =
 new Date().getFullYear();
+
 
 
 return `DMP-${year}-${String(next).padStart(3,"0")}`;

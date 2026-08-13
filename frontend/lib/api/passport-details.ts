@@ -100,32 +100,30 @@ export async function getPassportPerformance(
   return data ?? null;
 
 }
-
-
-
 // --------------------
 // Circularity / Sustainability
 // --------------------
-
 export async function getPassportCircularity(
-  id:number
-){
+  id: number
+) {
 
   const supabase = createClient();
 
 
+  // 1. Get sustainability data
+
   const {
-    data,
-    error
+    data: sustainability,
+    error: sustainabilityError
   } = await supabase
     .from("passport_sustainability")
     .select(
-`
+      `
       recycled_content,
       carbon_footprint,
       radioactivity,
       conflict_mineral_status
-`
+      `
     )
     .eq(
       "passport_id",
@@ -136,28 +134,103 @@ export async function getPassportCircularity(
 
 
   console.log(
-    "CIRCULARITY RESULT:",
-    data
+    "SUSTAINABILITY RESULT:",
+    sustainability
   );
 
 
   console.log(
-    "CIRCULARITY ERROR:",
-    error
+    "SUSTAINABILITY ERROR:",
+    sustainabilityError
   );
 
 
 
-  if(error){
-    throw error;
+  if(sustainabilityError){
+
+    throw sustainabilityError;
+
   }
 
 
-  return data ?? null;
+
+
+  // 2. Get passport lineage data
+
+  const {
+    data: lineage,
+    error: lineageError
+  } = await supabase
+    .from("passport_lineage")
+    .select(
+      `
+      id,
+      source_passport_id,
+      target_passport_id,
+      relationship_type,
+      recovery_method,
+      generation_number,
+
+      source_passport:source_passport_id(
+        passport_id
+      ),
+
+      target_passport:target_passport_id(
+        passport_id
+      )
+      `
+    )
+    .or(
+      `source_passport_id.eq.${id},target_passport_id.eq.${id}`
+    );
+
+
+
+  console.log(
+    "LINEAGE RESULT:",
+    lineage
+  );
+
+
+  console.log(
+    "LINEAGE ERROR:",
+    lineageError
+  );
+
+
+
+  if(lineageError){
+
+    throw lineageError;
+
+  }
+
+
+
+  return {
+
+    recycled_content:
+      sustainability?.recycled_content ?? null,
+
+
+    carbon_footprint:
+      sustainability?.carbon_footprint ?? null,
+
+
+    radioactivity:
+      sustainability?.radioactivity ?? null,
+
+
+    conflict_mineral_status:
+      sustainability?.conflict_mineral_status ?? null,
+
+
+    lineage:
+      lineage ?? []
+
+  };
 
 }
-
-
 
 // --------------------
 // Compliance

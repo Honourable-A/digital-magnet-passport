@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import {
 Tabs,
 TabsList,
@@ -179,7 +178,6 @@ passport.status
 
 
 </TabsContent>
-
 
 
 <TabsContent value="composition">
