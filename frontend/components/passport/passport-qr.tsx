@@ -7,8 +7,7 @@ export default function PassportQR({
 }:{
   passportId:string;
 }){
-const url =
-`${process.env.NEXT_PUBLIC_APP_URL}/passport/${passportId}`;
+const url = `${window.location.origin}/passport/${passportId}`;
 
 return (
 <div className="space-y-3">
