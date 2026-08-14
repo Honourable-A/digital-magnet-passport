@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRACE4 MAGNET — NdFeB Supply Chain World Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{display:flex;flex-direction:column}
+
+.header{background:linear-gradient(135deg,#1a237e,#01579b);color:white;padding:11px 20px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:1000;flex-wrap:wrap}
+.header h1{font-size:16px;font-weight:700;white-space:nowrap}
+.sector-tabs{display:flex;gap:5px}
+.sec-tab{padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,.5);border-radius:20px;background:transparent;color:rgba(255,255,255,.85);transition:all .2s}
+.sec-tab:hover{background:rgba(255,255,255,.18)}
+.sec-tab.active{background:white;color:#1a237e;border-color:white}
+
+.stage-bar{background:white;border-bottom:1px solid #e0e0e0;padding:7px 18px;flex-shrink:0;display:flex;gap:6px;align-items:center;z-index:999;flex-wrap:wrap}
+.stage-bar-label{font-size:11px;font-weight:700;color:#777;margin-right:2px;text-transform:uppercase;letter-spacing:.4px}
+.stg-btn{padding:3px 11px;font-size:11px;font-weight:600;border-radius:11px;border:1.5px solid;cursor:pointer;background:white;transition:all .15s}
+.stg-btn.active{color:white!important}
+
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%}
+#viz-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:650}
+
+#tooltip{position:absolute;background:white;border:1px solid #ddd;border-radius:10px;padding:12px 15px;font-size:12px;max-width:290px;box-shadow:0 6px 20px rgba(0,0,0,.15);pointer-events:none;z-index:900;display:none;line-height:1.5}
+#tooltip h4{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3}
+.tt-row{display:flex;gap:6px;margin-bottom:2px}
+.tt-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#aaa;min-width:52px;padding-top:1px}
+.tt-val{color:#333;font-size:12px}
+.tt-note{margin-top:7px;padding-top:7px;border-top:1px solid #f0f0f0;color:#555;font-size:11px;line-height:1.5}
+.tt-stage{font-weight:700}
+
+#legend{position:absolute;bottom:28px;right:12px;background:rgba(255,255,255,.96);border:1px solid #e0e0e0;border-radius:10px;padding:11px 15px;z-index:800;font-size:11px;box-shadow:0 2px 12px rgba(0,0,0,.1);min-width:170px}
+#legend h4{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.leg-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.leg-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.leg-sep{border-top:1px solid #eee;margin:6px 0}
+.verify-ring{width:11px;height:11px;border-radius:50%;border:2px dashed #ffc107;flex-shrink:0}
+
+#stats{position:absolute;bottom:28px;left:12px;background:rgba(255,255,255,.96);border:1px solid #e0e0e0;border-radius:10px;padding:9px 14px;z-index:800;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+
+.zoom-tip{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(26,35,126,.82);color:white;padding:5px 16px;border-radius:20px;font-size:11px;z-index:800;pointer-events:none;transition:opacity .4s}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔬 TRACE4 MAGNET — NdFeB Supply Chain World Map</h1>
+  <div class="sector-tabs">
+    <button class="sec-tab active" onclick="setSector('Wind')"    id="stab-Wind">🌬️ Wind Energy</button>
+    <button class="sec-tab"        onclick="setSector('EV')"      id="stab-EV">⚡ EV</button>
+    <button class="sec-tab"        onclick="setSector('Medical')" id="stab-Medical">🏥 Medical</button>
+  </div>
+</div>
+
+<div class="stage-bar">
+  <span class="stage-bar-label">Stage:</span>
+  <button class="stg-btn active" style="border-color:#555;color:#555"     onclick="setStage('all')" id="sb-all">All</button>
+  <button class="stg-btn" style="border-color:#7B0D0D;color:#7B0D0D"      onclick="setStage(0)"     id="sb-0">S1 Mining</button>
+  <button class="stg-btn" style="border-color:#3A1078;color:#3A1078"      onclick="setStage(1)"     id="sb-1">S2 Separation</button>
+  <button class="stg-btn" style="border-color:#0B3B82;color:#0B3B82"      onclick="setStage(2)"     id="sb-2">S3 Alloy</button>
+  <button class="stg-btn" style="border-color:#064E3B;color:#064E3B"      onclick="setStage(3)"     id="sb-3">S4 Magnets</button>
+  <button class="stg-btn" style="border-color:#EA580C;color:#EA580C"      onclick="setStage(4)"     id="sb-4">S5 Assembly</button>
+  <button class="stg-btn" style="border-color:#16A34A;color:#16A34A"      onclick="setStage(5)"     id="sb-5">S6 Recycling</button>
+</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <svg id="viz-svg" pointer-events="none">
+    <defs id="svg-defs"></defs>
+    <g id="edge-layer"></g>
+    <g id="node-layer" pointer-events="visiblePainted"></g>
+  </svg>
+  <div id="tooltip"></div>
+  <div id="legend">
+    <h4>Supply Chain Stage</h4>
+    <div class="leg-row"><div class="leg-dot" style="background:#7B0D0D"></div>S1 Mining &amp; Extraction</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#3A1078"></div>S2 Separation &amp; Refining</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#0B3B82"></div>S3 Alloy &amp; Powder</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#064E3B"></div>S4 Magnet Manufacturing</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#EA580C"></div>S5 Assembly &amp; Integration</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#16A34A"></div>S6 Recycling</div>
+    <div class="leg-sep"></div>
+    <div class="leg-row"><div class="leg-dot" style="background:#4caf50;border:2px solid #16A34A"></div>Confirmed relevant</div>
+    <div class="leg-row"><div class="verify-ring"></div>Needs verification</div>
+    <div class="leg-sep"></div>
+    <div class="leg-row"><div style="width:22px;height:2px;background:#999;border-radius:1px"></div><span style="margin-left:6px;font-size:11px;color:#666">Supply chain flow</span></div>
+    <div style="margin-top:6px;font-size:10px;color:#aaa;line-height:1.4">Select two adjacent stages<br>to highlight their connections</div>
+  </div>
+  <div id="stats"></div>
+  <div class="zoom-tip" id="zoom-tip">Zoom in to read firm labels · Click node for details</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────────
+const CHAIN_DATA = {"Wind": [[{"name": "CNNC Huasheng Minerals Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Chinese REE mining subsidiary of CNNC. REE activity reported but NdFeB-specific product stream not independently confirmed. Not 100% sure."}, {"name": "Glencore PLC", "country": "Switzerland", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Cobalt is a minor NdFeB additive but Glencore's primary business is copper/coal/zinc. "}, {"name": "Inner Mongolia Baogang Xichuang Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Part of Baogang Group, world's largest REE producer; mines bastnasite ore containing Nd, Pr, Dy, Tb — direct NdFeB feedstock."}, {"name": "Pensana PLC", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "UK-listed REE developer (Longonjo, Angola); specifically targets Nd/Pr oxide production for NdFeB magnet feedstock."}, {"name": "Sichuan JCC Rare Earths Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE miner; confirmed focus on HREE-rich ion-adsorption clays (Dy, Tb) — critical additives for high-performance NdFeB magnets."}, {"name": "Sumitomo Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "\"We hold interests in the production of mineral resources such as copper, nickel, aluminium, coal and iron ore\" not clearly NdFeB related."}, {"name": "European Green Transition PLC", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK-listed REE explorer (Greenland); explicitly targets Nd/Pr/Dy for European NdFeB supply chain."}, {"name": "Hastings Technology Metals", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Australian REE developer (Yangibana); Nd/Pr-dominant concentrate specifically for NdFeB magnet supply chain."}, {"name": "Iluka Resources", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Australian miner processing monazite; confirmed producer of mixed REE material including Nd/Pr as by-product stream."}, {"name": "Lynas Rare Earths", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Largest REE producer outside China; confirmed producer of separated NdPr oxide directly used as NdFeB alloy feedstock."}, {"name": "Rainbow Rare Earths", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK-listed REE miner (Phalaborwa, S. Africa); confirmed focus on Nd/Pr for NdFeB supply chain."}, {"name": "Vital Metals", "country": "Canada", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Canadian REE miner; confirmed producer of REE concentrates including Nd-bearing materials for NdFeB."}, {"name": "Altona Rare Earth", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Nd/Pr specifically for NdFeB supply chain."}, {"name": "Arafura Rare Earths", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "NdPr product specifically for NdFeB alloy manufacturing."}, {"name": "MP Materials Corp", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": " NdPr oxide producer for NdFeB magnet manufacturing."}], [{"name": "BGRIMM Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese state research institute; confirmed developer and operator of REE separation technology for NdFeB feedstock."}, {"name": "China Rare Earth Nonferrous Metals Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese state enterprise; one of six major REE groups with confirmed control of Nd, Pr, Dy, Tb separation and refining nationally."}, {"name": "China Rare Earth Resources And Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE processing company; confirmed separation and refining of Nd, Pr, Dy, Tb oxides for NdFeB alloy production."}, {"name": "Gansu Rare Earth New Material LLC", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE refiner (Gansu); confirmed separation of Nd, Pr oxides for NdFeB alloy production."}, {"name": "Ganzhou Qiandong Rare Earth Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Major Chinese REE separation/refining group (Jiangxi HREE region); confirmed key supplier of Dy and Tb oxides for high-performance NdFeB magnets."}, {"name": "Hebei Xiong'an Rare Earth Functional Materials Innovation Center Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE functional materials R&D and production centre; confirmed work on NdFeB-related REE material processing."}, {"name": "Hunan CNNC Jinyuan New Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE processing subsidiary of CNNC; confirmed separation of Nd, Pr, Dy for magnet-grade applications."}, {"name": "Tokuyama Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "High-purity Metallic Boron, but only one material related among all other product lines. "}, {"name": "Zibo Zhengxuan Rare Earth Functional Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Borderline case, rare earth compounds and rare earth oxides producers, but not Nd/Pr/Dy/Tb specific"}, {"name": "Shenghe Resources", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Major Chinese REE processing company; confirmed supply of Nd/Pr materials for NdFeB supply chain."}, {"name": "Solvay", "country": "Belgium", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Belgian specialty chemicals. Primary REE business is phosphors and catalysis for permanent magnet applications"}], [{"name": "APERAM SA", "country": "Luxembourg", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Aperam produces no confirmed NdFeB alloy. "}, {"name": "ATI Inc", "country": "United States", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Produces advanced alloys including some REE-containing grades, but NdFeB-specific alloy production not independently confirmed"}, {"name": "Advanced Technology & Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese advanced materials (AT&M); confirmed producer of NdFeB alloy powder directly used in sintered NdFeB magnet manufacturing."}, {"name": "Baotou Iron and Steel Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese steel and REE group integrated with Baogang; confirmed producer of REE-iron alloy feedstocks for NdFeB alloy production."}, {"name": "China Northern Rare Earth Group High-Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "[RELEVANT] China's largest REE producer (Baogang Group); confirmed producer of NdFeB-grade NdPr alloy and REE metals."}, {"name": "Ganzhou Keli Rare Earth New Material Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE new materials (Jiangxi HREE region); confirmed producer of NdFeB alloy materials including Dy/Tb-enhanced magnet grades."}, {"name": "Metalink Special Alloys Corp", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Nickle Boron, cobalt boron which are directly used in NdFeB alloy production "}, {"name": "Toda Kogyo Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Confirmed producer of REE compounds and magnetic material precursors for NdFeB alloy applications."}, {"name": "Xiamen Tungsten Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Major producer of NdFeB alloy powder — one of China's leading NdFeB alloy manufacturers."}, {"name": "Neo Performance Materials", "country": "Canada", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Canadian REE and magnetic materials company; confirmed producer of NdFeB alloy powder and bonded magnet materials. Key non-Chinese S3 supplier."}], [{"name": "Anhui Sinomag Technology Co Lt", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer; confirmed producer of sintered NdFeB permanent magnets for motors and wind turbines."}, {"name": "Baotou INST Magnetic New Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer (Baogang group); confirmed state-linked NdFeB sintered magnet producer."}, {"name": "Baotou Tianhe Magnetics Technology", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Specializes in sintered NdFeB (Neodymium Iron Boron) and SmCo (Samarium Cobalt) magnets, along with compression-molded magnets for high-end applications."}, {"name": "Beijing Zhong Ke San Huan High-Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Research, development, production, and sale of sintered Nd-Fe-B magnets, bonded Nd-Fe-B magnets, and soft ferrites."}, {"name": "Chengdu Galaxy Magnets Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": " NdFeB producer. Identified via Nidec SPLC run."}, {"name": "Earth-Panda Advanced Magnetic Material Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of high-performance sintered NdFeB magnets for EV and wind energy."}, {"name": "Hengdian Group DMEGC Magnetics", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Key Chinese Magnet producer"}, {"name": "Hitachi Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Hitachi Metals division (now Proterial); confirmed world-leading NdFeB sintered magnet manufacturer (NEOMAX brand)."}, {"name": "Mkango Resources", "country": "Canada", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Canadian REE developer (Songwe Hill); confirmed Nd/Pr project with HyProMag recycling partnership in UK. Cross-stage relevance S1-S6."}, {"name": "Ningbo Huahui Magnetic Industry Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered NdFeB permanent magnets for industrial and wind applications."}, {"name": "Ningbo Yunsheng Magnet Devices Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered and bonded NdFeB magnets for EV, wind and consumer electronics."}, {"name": "Ningbo Zhaobao Magnet Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered NdFeB permanent magnets for motor and drive applications."}, {"name": "Shin-Etsu Chemical", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "One of world's top NdFeB sintered magnet manufacturers (SHIN-ETSU MAGNETICS brand). "}, {"name": "Xinyang Yuanchuang Magnetic Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer"}, {"name": "Yantai Zhenghai Magnetic Mater", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB sintered magnet manufacturer. Cross-confirmed in both Nidec AND Vestas SPLC runs"}, {"name": "Zhejiang Zhongke Magnetic Industry Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer; confirmed producer of sintered NdFeB permanent magnets for wind, EV and industrial applications."}, {"name": "Zhongxi Tianma New Material Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB alloy/magnet materials company; confirmed producer of NdFeB-related magnetic materials and alloy powders."}, {"name": "Less Common Metals Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company (Ellesmere Port); confirmed producer of REE alloys and NdFeB master alloys"}, {"name": "Magnomatics Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company (Sheffield); confirmed developer of magnetic gear/motor technology using NdFeB permanent magnets for wind and automotive."}, {"name": "TDK Corporation", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "One of world's largest NdFeB magnet manufacturers (NEOREC product lines)."}, {"name": "Vacuumschmelze (VAC)", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "German magnetic materials company; confirmed sintered NdFeB permanent magnet manufacturer"}], [{"name": "Danfoss Power Solutions US Co", "country": "Denmark", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Under Power Solutions they explicitly list Electric converters, motors and systems and Motors (product could covers both EV and wind)"}, {"name": "Fuji Electric Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "relevance is through servo/PMSM motors for general industrial and automotive applications, not specifically wind turbine pitch control or EV traction"}, {"name": "GE Vernova", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "US energy company (GE spin-off); manufacturer of wind turbine generators using NdFeB permanent magnets. "}, {"name": "General Electric Co", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "US industrial conglomerate; confirmed wind turbine and industrial motor producer using NdFeB permanent magnets."}, {"name": "Nidec Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "World's largest motor manufacturer; assembler of precision and traction motors incorporating NdFeB permanent magnets.."}, {"name": "Panasonic Holdings Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Japanese electronics"}, {"name": "Qingdao CCS Electric Corp", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "PM motors (Permanent Magnet motors) as a core product. PM motors are permanent magnet synchronous motors"}, {"name": "Shenzhen Inovance Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Low Voltage Three-Phase PM Servo Motor"}, {"name": "TDK Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "apanese electronics giant; NdFeB magnet manufacturer and motor system integrator."}, {"name": "Vestas", "country": "Denmark", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Danish wind turbine anchor firm; NdFeB permanent magnets in direct-drive turbines. "}, {"name": "Siemens Gamesa", "country": "Spain", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Spanish wind turbine manufacturer; producer of direct-drive turbines using NdFeB permanent magnets "}, {"name": "Changzhou Shenli Electrical Ma", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "permanent magnet generators and motors"}, {"name": "Eurogroup Laminations SpA", "country": "Italy", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Italian manufacturer of motor laminations for NdFeB permanent magnet motors. "}, {"name": "Jiangsu SINOJIT Wind Energy Te", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese wind energy equipment manufacturer. Assembles wind turbine systems using NdFeB magnets "}, {"name": "Jiangsu Tongda Power Technolog", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese motor manufacturer. Uses NdFeB magnets in motors but does not manufacture magnets."}, {"name": "Murata Manufacturing Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Japanese electronics component maker; possible producer of inductors and sensors incorporating NdFeB-related magnetic materials."}, {"name": "NTN Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Electric Motor and Actuator"}, {"name": "Siemens AG", "country": "Germany", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "German industrial giant; confirmed manufacturer of motors, generators and wind turbine systems incorporating NdFeB permanent magnets."}, {"name": "TSP Wind Power Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese wind power equipment. Assembles wind turbine systems using NdFeB magnets"}, {"name": "Orsted", "country": "United Kingdom", "sub_region": "london", "multi_sector": false, "status": "RELEVANT", "note": "offshore wind"}, {"name": "Alleima", "country": "United Kingdom", "sub_region": "Perth", "multi_sector": false, "status": "RELEVANT", "note": "offshore wind"}, {"name": "Ampaire", "country": "United Kingdom", "sub_region": "Leicester", "multi_sector": false, "status": "RELEVANT", "note": "micro wind turbine for school and residentials "}, {"name": "Gaia Wind Ltd", "country": "United Kingdom", "sub_region": "Glasgow", "multi_sector": false, "status": "RELEVANT", "note": "Wind turbine manufacturer"}, {"name": "Marlec renewable power", "country": "United Kingdom", "sub_region": "Corby NN17 5XY", "multi_sector": false, "status": "RELEVANT", "note": "Wind turbine manufacturer"}, {"name": "Norvento", "country": "Spain", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Onshore wind turbine distribution projects"}, {"name": "Siemens Gamesa (UK based)", "country": "United Kingdom", "sub_region": "East Riding of Yorkshire", "multi_sector": false, "status": "RELEVANT", "note": "blade manufacturing"}, {"name": "Vestas (UK)", "country": "United Kingdom", "sub_region": "Newport, Isle of Wight", "multi_sector": false, "status": "RELEVANT", "note": "Vestas blade manufacturing facility in UK"}, {"name": "GE Renewable Energe (UK)", "country": "United Kingdom", "sub_region": "Teesside", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Britwind", "country": "United Kingdom", "sub_region": "Gloucestershire GL5 5HT", "multi_sector": false, "status": "RELEVANT", "note": "small scale wind power"}, {"name": "Ocean Winds", "country": "United Kingdom", "sub_region": "Northeast", "multi_sector": false, "status": "RELEVANT", "note": "manufacturer"}, {"name": "Statkraft", "country": "United Kingdom", "sub_region": "Cardiff, Glasgow, London", "multi_sector": false, "status": "RELEVANT", "note": "Global Hydropower cooperation UK division"}, {"name": "SSE renewables", "country": "United Kingdom", "sub_region": "Scotland", "multi_sector": false, "status": "RELEVANT", "note": "No magnet involved, it’s a wind farm, but maybe reach out for their suppliers"}, {"name": "RWE Global", "country": "United Kingdom", "sub_region": "Swindon", "multi_sector": false, "status": "RELEVANT", "note": "wind farm again, Procurement intership listed in Swindon"}, {"name": "RTS wind UK", "country": "United Kingdom", "sub_region": "Guisborough", "multi_sector": false, "status": "RELEVANT", "note": "wind turbine services and solutions (not sure if it is a manufacturer) Firms below are sourced from \"ensun wind turbine companies in UK"}, {"name": "Cwind", "country": "United Kingdom", "sub_region": "Chelmsford", "multi_sector": false, "status": "RELEVANT", "note": "wind farms"}, {"name": "DH Renewables Ltd", "country": "United Kingdom", "sub_region": "Kirkcaldy", "multi_sector": false, "status": "RELEVANT", "note": "wind tubine installation only, turbine maintainance services too"}, {"name": "Altrad", "country": "United Kingdom", "sub_region": "Aberdeen City", "multi_sector": false, "status": "RELEVANT", "note": "maintainance wind turbine"}], [{"name": "GEM Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Chinese battery and cobalt recycling company. May involve in activities for NdFeB recovery besides cobalt recycling"}, {"name": "Bunting", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "US company (Bunting Magnetics); confirmed producer of magnetic separation equipment and processor of NdFeB scrap and recycled magnet material."}, {"name": "Jiangsu Huahong Technology Stock Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Rare-earth magnetic materials and elevator components"}, {"name": "HyProMag", "country": "United Kingdom", "sub_region": "Birmingham", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Lightning Machines Ltd", "country": "United Kingdom", "sub_region": "Oldham", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed involvement in magnet recovery and reuse from end-of-life electrical machines incorporating NdFeB permanent magnets."}, {"name": "Magnetic Systems Technology Ltd", "country": "United Kingdom", "sub_region": "Rotherham, England, S60 1FHRotherham, England, S60 1FH", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed provider of recycling/recovery services for NdFeB permanent magnets from end-of-life applications."}, {"name": "Wiser Recycling", "country": "United Kingdom", "sub_region": "Eastleigh, Hampshire, SO53 3TY", "multi_sector": false, "status": "RELEVANT", "note": "UK recycling company; confirmed specialisation in recovery of rare earth permanent magnets from end-of-life equipment."}, {"name": "European Metal Recycling Ltd", "country": "United Kingdom", "sub_region": "Warrington, Cheshire, WA5 7NS", "multi_sector": false, "status": "RELEVANT", "note": "UK metal recycling company; confirmed processing of end-of-life products containing NdFeB permanent magnets."}, {"name": "Ionic Technologies", "country": "United Kingdom", "sub_region": "Wolverhampton, England, WV10 6EQ", "multi_sector": false, "status": "RELEVANT", "note": "recovering Nd, Pr, Dy, Tb from end-of-life NdFeB magnets."}, {"name": "Minviro Ltd", "country": "United Kingdom", "sub_region": "London, United Kingdom, SE1 0HS", "multi_sector": false, "status": "RELEVANT", "note": "UK sustainability consultancy"}, {"name": "RarEarth Srl", "country": "Italy", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovery of Nd, Pr, Dy, Tb from end-of-life NdFeB magnets and electronic waste."}, {"name": "Seloxium", "country": "United Kingdom", "sub_region": "Oxford, Oxfordshire", "multi_sector": false, "status": "RELEVANT", "note": "UK REE recycling company"}, {"name": "Descycle", "country": "United Kingdom", "sub_region": "London, UK, WC1H 9BQ", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Eocycle", "country": "Canada", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "distributed wind turbines for farms, commercial and community-scale projects"}]], "EV": [[{"name": "CNNC Huasheng Minerals Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Chinese REE mining subsidiary of CNNC. REE activity reported but NdFeB-specific product stream not independently confirmed. Not 100% sure."}, {"name": "Glencore PLC", "country": "Switzerland", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Cobalt is a minor NdFeB additive but Glencore's primary business is copper/coal/zinc. "}, {"name": "Inner Mongolia Baogang Xichuang Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Part of Baogang Group, world's largest REE producer; mines bastnasite ore containing Nd, Pr, Dy, Tb — direct NdFeB feedstock."}, {"name": "Pensana PLC", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "UK-listed REE developer (Longonjo, Angola); specifically targets Nd/Pr oxide production for NdFeB magnet feedstock."}, {"name": "Sichuan JCC Rare Earths Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE miner; confirmed focus on HREE-rich ion-adsorption clays (Dy, Tb) — critical additives for high-performance NdFeB magnets."}, {"name": "Sumitomo Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "\"We hold interests in the production of mineral resources such as copper, nickel, aluminium, coal and iron ore\" not clearly NdFeB related."}, {"name": "European Green Transition PLC", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK-listed REE explorer (Greenland); explicitly targets Nd/Pr/Dy for European NdFeB supply chain."}, {"name": "Hastings Technology Metals", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Australian REE developer (Yangibana); Nd/Pr-dominant concentrate specifically for NdFeB magnet supply chain."}, {"name": "Iluka Resources", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Australian miner processing monazite; confirmed producer of mixed REE material including Nd/Pr as by-product stream."}, {"name": "Lynas Rare Earths", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Largest REE producer outside China; confirmed producer of separated NdPr oxide directly used as NdFeB alloy feedstock."}, {"name": "Rainbow Rare Earths", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK-listed REE miner (Phalaborwa, S. Africa); confirmed focus on Nd/Pr for NdFeB supply chain."}, {"name": "Vital Metals", "country": "Canada", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Canadian REE miner; confirmed producer of REE concentrates including Nd-bearing materials for NdFeB."}, {"name": "Altona Rare Earth", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Nd/Pr specifically for NdFeB supply chain."}, {"name": "Arafura Rare Earths", "country": "Australia", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "NdPr product specifically for NdFeB alloy manufacturing."}, {"name": "MP Materials Corp", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": " NdPr oxide producer for NdFeB magnet manufacturing."}], [{"name": "BGRIMM Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese state research institute; confirmed developer and operator of REE separation technology for NdFeB feedstock."}, {"name": "China Rare Earth Nonferrous Metals Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese state enterprise; one of six major REE groups with confirmed control of Nd, Pr, Dy, Tb separation and refining nationally."}, {"name": "China Rare Earth Resources And Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE processing company; confirmed separation and refining of Nd, Pr, Dy, Tb oxides for NdFeB alloy production."}, {"name": "Gansu Rare Earth New Material LLC", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE refiner (Gansu); confirmed separation of Nd, Pr oxides for NdFeB alloy production."}, {"name": "Ganzhou Qiandong Rare Earth Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Major Chinese REE separation/refining group (Jiangxi HREE region); confirmed key supplier of Dy and Tb oxides for high-performance NdFeB magnets."}, {"name": "Hebei Xiong'an Rare Earth Functional Materials Innovation Center Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE functional materials R&D and production centre; confirmed work on NdFeB-related REE material processing."}, {"name": "Hunan CNNC Jinyuan New Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE processing subsidiary of CNNC; confirmed separation of Nd, Pr, Dy for magnet-grade applications."}, {"name": "Tokuyama Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "High-purity Metallic Boron, but only one material related among all other product lines. "}, {"name": "Zibo Zhengxuan Rare Earth Functional Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Borderline case, rare earth compounds and rare earth oxides producers, but not Nd/Pr/Dy/Tb specific"}, {"name": "Shenghe Resources", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Major Chinese REE processing company; confirmed supply of Nd/Pr materials for NdFeB supply chain."}, {"name": "Solvay", "country": "Belgium", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Belgian specialty chemicals. Primary REE business is phosphors and catalysis for permanent magnet applications"}], [{"name": "APERAM SA", "country": "Luxembourg", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Aperam produces no confirmed NdFeB alloy. "}, {"name": "ATI Inc", "country": "United States", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Produces advanced alloys including some REE-containing grades, but NdFeB-specific alloy production not independently confirmed"}, {"name": "Advanced Technology & Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese advanced materials (AT&M); confirmed producer of NdFeB alloy powder directly used in sintered NdFeB magnet manufacturing."}, {"name": "Baotou Iron and Steel Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese steel and REE group integrated with Baogang; confirmed producer of REE-iron alloy feedstocks for NdFeB alloy production."}, {"name": "China Northern Rare Earth Group High-Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "[RELEVANT] China's largest REE producer (Baogang Group); confirmed producer of NdFeB-grade NdPr alloy and REE metals."}, {"name": "Ganzhou Keli Rare Earth New Material Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese REE new materials (Jiangxi HREE region); confirmed producer of NdFeB alloy materials including Dy/Tb-enhanced magnet grades."}, {"name": "Metalink Special Alloys Corp", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Nickle Boron, cobalt boron which are directly used in NdFeB alloy production "}, {"name": "Toda Kogyo Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Confirmed producer of REE compounds and magnetic material precursors for NdFeB alloy applications."}, {"name": "Xiamen Tungsten Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Major producer of NdFeB alloy powder — one of China's leading NdFeB alloy manufacturers."}, {"name": "Neo Performance Materials", "country": "Canada", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Canadian REE and magnetic materials company; confirmed producer of NdFeB alloy powder and bonded magnet materials. Key non-Chinese S3 supplier."}], [{"name": "Anhui Sinomag Technology Co Lt", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer; confirmed producer of sintered NdFeB permanent magnets for motors and wind turbines."}, {"name": "Baotou INST Magnetic New Materials Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer (Baogang group); confirmed state-linked NdFeB sintered magnet producer."}, {"name": "Baotou Tianhe Magnetics Technology", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Specializes in sintered NdFeB (Neodymium Iron Boron) and SmCo (Samarium Cobalt) magnets, along with compression-molded magnets for high-end applications."}, {"name": "Beijing Zhong Ke San Huan High-Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Research, development, production, and sale of sintered Nd-Fe-B magnets, bonded Nd-Fe-B magnets, and soft ferrites."}, {"name": "Chengdu Galaxy Magnets Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": " NdFeB producer. Identified via Nidec SPLC run."}, {"name": "Earth-Panda Advanced Magnetic Material Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of high-performance sintered NdFeB magnets for EV and wind energy."}, {"name": "Hengdian Group DMEGC Magnetics", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Key Chinese Magnet producer"}, {"name": "Hitachi Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Hitachi Metals division (now Proterial); confirmed world-leading NdFeB sintered magnet manufacturer (NEOMAX brand)."}, {"name": "Mkango Resources", "country": "Canada", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Canadian REE developer (Songwe Hill); confirmed Nd/Pr project with HyProMag recycling partnership in UK. Cross-stage relevance S1-S6."}, {"name": "Ningbo Huahui Magnetic Industry Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered NdFeB permanent magnets for industrial and wind applications."}, {"name": "Ningbo Yunsheng Magnet Devices Tech Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered and bonded NdFeB magnets for EV, wind and consumer electronics."}, {"name": "Ningbo Zhaobao Magnet Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Producer of sintered NdFeB permanent magnets for motor and drive applications."}, {"name": "Shin-Etsu Chemical", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "One of world's top NdFeB sintered magnet manufacturers (SHIN-ETSU MAGNETICS brand). "}, {"name": "Xinyang Yuanchuang Magnetic Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer"}, {"name": "Yantai Zhenghai Magnetic Mater", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB sintered magnet manufacturer. Cross-confirmed in both Nidec AND Vestas SPLC runs"}, {"name": "Zhejiang Zhongke Magnetic Industry Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB magnet manufacturer; confirmed producer of sintered NdFeB permanent magnets for wind, EV and industrial applications."}, {"name": "Zhongxi Tianma New Material Technology Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese NdFeB alloy/magnet materials company; confirmed producer of NdFeB-related magnetic materials and alloy powders."}, {"name": "Less Common Metals Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company (Ellesmere Port); confirmed producer of REE alloys and NdFeB master alloys"}, {"name": "Magnomatics Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company (Sheffield); confirmed developer of magnetic gear/motor technology using NdFeB permanent magnets for wind and automotive."}, {"name": "TDK Corporation", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "One of world's largest NdFeB magnet manufacturers (NEOREC product lines)."}, {"name": "Vacuumschmelze (VAC)", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "German magnetic materials company; confirmed sintered NdFeB permanent magnet manufacturer"}, {"name": "Wolong Electric Group", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese electric motor manufacturer"}, {"name": "Arnold Magnetics", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "US NdFeB magnet manufacturer (Arnold Magnetic Technologies); confirmed producer of sintered and bonded NdFeB magnets for EV, aerospace and industrial applications."}, {"name": "JL Mag Rare-Earth Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "producer of sintered NdFeB magnets for EV traction motors and wind turbines."}, {"name": "Magnet Sales", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK NdFeB magnet distributor; confirmed supplier of NdFeB permanent magnets for UK industrial, EV and energy applications."}], [{"name": "Bayerische Motoren Werke AG", "country": "Germany", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "BMW Group; confirmed major EV manufacturer"}, {"name": "Brose Fahrzeugteile GmbH & Co KG", "country": "Germany", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "German automotive supplier; confirmed producer of electric motors incorporating NdFeB permanent magnets for automotive OEMs."}, {"name": "Continental AG", "country": "Germany", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "German automotive technology; producer of traction motors and powertrain systems incorporating magnets"}, {"name": "Danfoss Power Solutions US Co", "country": "Denmark", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Under Power Solutions they explicitly list Electric converters, motors and systems and Motors (product could covers both EV and wind)"}, {"name": "Fuji Electric Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "relevance is through servo/PMSM motors for general industrial and automotive applications, not specifically wind turbine pitch control or EV traction"}, {"name": "Geely Automobile Holdings Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese automaker (Geely group)"}, {"name": "General Electric Co", "country": "United States", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "General Motors Co", "country": "USA", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "Great Wall Motor Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese EV manufacturer"}, {"name": "Honda Motor Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Japanese automaker"}, {"name": "Hyundai Motor Co", "country": "South Korea", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "South Korean automaker"}, {"name": "JTEKT Corp", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Japanese steering systems; confirmed producer of EV power steering systems"}, {"name": "Magna International Inc", "country": "Canada", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "producer of EV motors and powertrains incorporating NdFeB permanent magnets."}, {"name": "Mercedes-Benz Group AG", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Mitsubishi Motors Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "Nidec Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "Nissan Motor Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Panasonic Holdings Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "Qingdao CCS Electric Corp", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "PM motors (Permanent Magnet motors) as a core product. PM motors are permanent magnet synchronous motors"}, {"name": "Sany Heavy Industry Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese heavy machinery"}, {"name": "Stellantis NV", "country": "Netherlands", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Suzuki Motor Corp", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "producer of hybrid vehicles "}, {"name": "TDK Corp", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "TKH Group NV", "country": "Netherlands", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": ""}, {"name": "Tata Motors Passenger Vehicles Limited", "country": "India", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Toyota Motor Corp", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Univance Corp", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "manufacturing drivetrain units"}, {"name": "Volkswagen AG", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Weichai Power Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese producer of hybrid/electric powertrains incorporating NdFeB permanent magnet motors."}, {"name": "Wuling Motors Holdings Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese mini-EV manufacturer"}, {"name": "Xinzhi Group Co Ltd", "country": "China", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Chinese motor and compressor manufacturer"}, {"name": "Yutong Bus Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Chinese EV bus manufacturer"}, {"name": "GKN Hybrid Power Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK subsidiary of GKN Automotive; developer of flywheel and hybrid power systems incorporating NdFeB permanent magnets."}, {"name": "Jaguar Land Rover", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}, {"name": "Kendrion NV", "country": "Netherlands", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Industrial brakes and locking system"}, {"name": "BorgWarner Inc", "country": "USA", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "US EV drivetrain components. Uses NdFeB in e-motors"}, {"name": "Denso Corp", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Japanese automotive components. Major user of NdFeB magnets in motors"}, {"name": "Robert Bosch GmbH", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "German automotive systems. Major user of NdFeB magnets in EV motors"}, {"name": "Schaeffler AG", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "German bearings and automotive supplier. Uses NdFeB magnets in e-motors "}, {"name": "ZF Friedrichshafen AG", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "German automotive driveline."}, {"name": "Johnson Electric Holdings Ltd", "country": "Hong Kong", "sub_region": "", "multi_sector": true, "status": "RELEVANT", "note": "Hong Kong motion systems producer"}], [{"name": "GEM Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Chinese battery and cobalt recycling company. May involve in activities for NdFeB recovery besides cobalt recycling"}, {"name": "Bunting", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "US company (Bunting Magnetics); confirmed producer of magnetic separation equipment and processor of NdFeB scrap and recycled magnet material."}, {"name": "Jiangsu Huahong Technology Stock Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Rare-earth magnetic materials and elevator components"}, {"name": "HyProMag", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": ""}, {"name": "Lightning Machines Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed involvement in magnet recovery and reuse from end-of-life electrical machines incorporating NdFeB permanent magnets."}, {"name": "Magnetic Systems Technology Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed provider of recycling/recovery services for NdFeB permanent magnets from end-of-life applications."}, {"name": "Wiser Recycling", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK recycling company; confirmed specialisation in recovery of rare earth permanent magnets from end-of-life equipment."}, {"name": "European Metal Recycling Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK metal recycling company; confirmed processing of end-of-life products containing NdFeB permanent magnets."}, {"name": "Ionic Technologies", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovering Nd, Pr, Dy, Tb from end-of-life NdFeB magnets."}, {"name": "Minviro Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK sustainability consultancy"}, {"name": "RarEarth Srl", "country": "Italy", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovery of Nd, Pr, Dy, Tb from end-of-life NdFeB magnets and electronic waste."}, {"name": "Seloxium", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK REE recycling company"}, {"name": "Descycle", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}]], "Medical": [[], [], [{"name": "ATI Inc", "country": "United States", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "\"For example, in medical imaging our niobium-titanium alloys are the standard for building superconducting magnets that operate at near absolute zero temperatures in MRI machines.\" "}, {"name": "Tokyo Denkai Co Ltd", "country": "Japan", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Tantalum sputtering targets for semiconductors and niobium for superconducting accelerators (possibly related to MRI/medical sector overlap)"}], [{"name": "Ningbo Jansen Superconducting", "country": "China", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Superconducting materials company. MRI main field magnets use superconducting coils not NdFeB. Possible NdFeB role in secondary MRI components unconfirmed."}], [{"name": "EM-Tech Co Ltd", "country": "South Korea", "sub_region": "", "multi_sector": false, "status": "VERIFY", "note": "Small motor manufacturer for consumer electronics. Possible NdFeB motors in medical devices but medical-specific role unconfirmed."}, {"name": "Esaote", "country": "Italy", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Italian manufacturer of dedicated compact and open extremity MRI systems using permanent magnets. Direct NdFeB user in low-field permanent magnet MRI systems."}, {"name": "MR Solutions", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Specialises in cryogen-free (dry) permanent magnet MRI systems. Permanent magnet MRI uses NdFeB or SmCo magnets directly"}, {"name": "Hitachi Healthcare", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Specialist in open MRI systems (AIRIS Vento, OASIS) using permanent magnets rather than superconducting coils. Open MRI permanent magnet systems are direct NdFeB users"}, {"name": "GE HealthCare Technologies", "country": "United States", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Main field magnets are superconducting; NdFeB used in secondary gradient/ancillary assemblies."}, {"name": "Koninklijke Philips NV", "country": "Netherlands", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "confirmed MRI and imaging system producer. NdFeB relevance to secondary imaging system components confirmed."}, {"name": "Siemens Healthineers", "country": "Germany", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "consistent with MRI main field using superconducting not NdFeB magnets."}, {"name": "Siemens AG", "country": "Germany", "sub_region": "", "multi_sector": true, "status": "VERIFY", "note": "Industrial motors and systems incorporate NdFeB but medical-specific NdFeB supply role is uncertain given Healthineers is already captured separately."}, {"name": "Jiangsu Leili Motor Co Ltd", "country": "China", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "medical relevance is through their micro and precision motors"}, {"name": "Canon Medical Systems", "country": "Japan", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "Japanese MRI manufacturer (formerly Toshiba Medical). Produces Vantage series MRI systems. Main field superconducting; NdFeB used in secondary components."}], [{"name": "Nanomox Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovery from NdFeB magnets including from medical device end-of-life streams."}, {"name": "Lightning Machines Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed involvement in magnet recovery and reuse from end-of-life electrical machines incorporating NdFeB permanent magnets."}, {"name": "Magnetic Systems Technology Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK company; confirmed provider of recycling/recovery services for NdFeB permanent magnets from end-of-life applications."}, {"name": "Wiser Recycling", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK recycling company; confirmed specialisation in recovery of rare earth permanent magnets from end-of-life equipment."}, {"name": "European Metal Recycling Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK metal recycling company; confirmed processing of end-of-life products containing NdFeB permanent magnets."}, {"name": "Ionic Technologies", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovering Nd, Pr, Dy, Tb from end-of-life NdFeB magnets."}, {"name": "Minviro Ltd", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK sustainability consultancy"}, {"name": "RarEarth Srl", "country": "Italy", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "recovery of Nd, Pr, Dy, Tb from end-of-life NdFeB magnets and electronic waste."}, {"name": "Seloxium", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": "UK REE recycling company"}, {"name": "Descycle", "country": "United Kingdom", "sub_region": "", "multi_sector": false, "status": "RELEVANT", "note": ""}]]};
+
+const STAGE_COLORS = ["#7B0D0D","#3A1078","#0B3B82","#064E3B","#EA580C","#16A34A"];
+const STAGE_NAMES  = ["S1: Mining","S2: Separation","S3: Alloy & Powder","S4: Magnet Mfg","S5: Assembly","S6: Recycling"];
+const SECTOR_LABELS= {Wind:"Wind Energy", EV:"Electric Vehicles", Medical:"Medical"};
+
+// Country bounding boxes [minLat, maxLat, minLng, maxLng]
+// Tightened to keep nodes on land
+const BOUNDS = {
+  "China":          [22,40,111,122],   // east coast corridor
+  "Japan":          [32,43,132,141],   // Honshu main land; avoids Sea of Japan
+  "United States":  [27,47,-122,-72],
+  "USA":            [27,47,-122,-72],
+  "Germany":        [48,54,7,14],
+  "United Kingdom": [52,56,-3.0,-0.5], // inland safe zone — avoids North Sea and Irish Sea
+  "Australia":      [-36,-20,117,151],
+  "Canada":         [44,58,-125,-65],
+  "Denmark":        [55,57,9,12.5],
+  "Switzerland":    [46.2,47.6,6.5,10],
+  "Belgium":        [49.8,51.2,3,6],
+  "Netherlands":    [51.5,53,4,7],
+  "South Korea":    [35,37.5,127,129], // main peninsula; avoids coasts
+  "Italy":          [38,45.5,8,16],
+  "India":          [10,32,71,90],
+  "Luxembourg":     [49.5,50,6,6.5],
+  "Spain":          [37,43,-7,3],
+  "Hong Kong":      [22.2,22.5,114,114.3],
+  "France":         [43,50.5,-3,7.5],
+  "Sweden":         [56,63,12,20],
+  "Norway":         [58,68,6,28],
+  "South Africa":   [-33,-23,18,31]
+};
+
+// ── SEEDED RNG ──────────────────────────────────────────────────────────────
+function mkRng(seed) {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function nameHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = (((h << 5) + h) ^ str.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+// ── UK CITY LOOKUP [lat, lng] ────────────────────────────────────────────────
+const UK_CITIES = {
+  "london":          [51.51, -0.10],
+  "perth":           [56.40, -3.47],
+  "leicester":       [52.63, -1.13],
+  "glasgow":         [55.86, -3.90], // shifted east to avoid Firth of Clyde
+  "corby":           [52.49, -0.70],
+  "yorkshire":       [53.85, -1.50],
+  "isle of wight":   [50.69, -1.29],
+  "newport":         [50.69, -1.29],
+  "teesside":        [54.57, -1.23],
+  "gloucestershire": [51.86, -2.10],
+  "northeast":       [54.97, -1.61],
+  "cardiff":         [51.48, -3.17],
+  "scotland":        [56.50, -3.50], // shifted east to Perthshire — avoids west coast
+  "swindon":         [51.56, -1.78],
+  "guisborough":     [54.53, -1.05],
+  "chelmsford":      [51.74,  0.47],
+  "kirkcaldy":       [56.11, -3.15],
+  "aberdeen":        [57.15, -2.11],
+  "birmingham":      [52.48, -1.90],
+  "oldham":          [53.54, -2.12],
+  "eastleigh":       [50.97, -1.36],
+  "hampshire":       [51.06, -1.31],
+  "warrington":      [53.39, -2.59],
+  "wolverhampton":   [52.59, -2.13],
+  "oxford":          [51.75, -1.26],
+  "rotherham":       [53.43, -1.36],
+};
+function ukCityPos(sub_region, name) {
+  const q = sub_region.toLowerCase();
+  for (const [key, coords] of Object.entries(UK_CITIES)) {
+    if (q.includes(key)) {
+      const rng = mkRng(nameHash(name + '|' + sub_region));
+      return [coords[0] + (rng() - 0.5) * 0.15, coords[1] + (rng() - 0.5) * 0.15];
+    }
+  }
+  return null;
+}
+
+function getPos(country, name, sub_region) {
+  if (sub_region && country === 'United Kingdom') {
+    const p = ukCityPos(sub_region, name);
+    if (p) return p;
+  }
+  const b = BOUNDS[country];
+  if (!b) return [20, 20];
+  const rng = mkRng(nameHash(name + '|' + country));
+  const pad = 0.08;
+  const lat = b[0] + pad*(b[1]-b[0]) + rng()*(1-2*pad)*(b[1]-b[0]);
+  const lng = b[2] + pad*(b[3]-b[2]) + rng()*(1-2*pad)*(b[3]-b[2]);
+  return [lat, lng];
+}
+
+// ── BUILD FIRM REGISTRY ─────────────────────────────────────────────────────
+const FIRMS = {};
+["Wind","EV","Medical"].forEach(sec => {
+  CHAIN_DATA[sec].forEach((stage, si) => {
+    stage.forEach(firm => {
+      if (!FIRMS[firm.name]) {
+        const [lat, lng] = getPos(firm.country, firm.name, firm.sub_region || '');
+        FIRMS[firm.name] = { ...firm, lat, lng, sectors: {}, stagesBySec: {} };
+      }
+      FIRMS[firm.name].sectors[sec]      = true;
+      FIRMS[firm.name].stagesBySec[sec]  = si;
+    });
+  });
+});
+
+// ── EDGE GENERATION ─────────────────────────────────────────────────────────
+// Rules: only S_i → S_{i+1} (strictly adjacent). Cap at MAX_EDGES per pair.
+// All S1 firms and all S6 firms must have ≥1 edge (they have no other stage).
+function genEdges(sec) {
+  const MAX_PER_PAIR = 9; // visual cap for middle pairs
+  const groups = CHAIN_DATA[sec].map((stage, si) =>
+    stage.map(firm => ({ key: firm.name, node: FIRMS[firm.name], si }))
+  );
+  const edges = [];
+  const rng = mkRng(nameHash(sec));
+
+  // Find consecutive non-empty stage pairs
+  const nonEmpty = groups.map((g,i)=>({g,i})).filter(x=>x.g.length>0);
+
+  for (let k = 0; k < nonEmpty.length - 1; k++) {
+    const { g: from, i: fromSi } = nonEmpty[k];
+    const { g: to,   i: toSi   } = nonEmpty[k+1];
+
+    const isFirst = k === 0;                         // S1 side must all be covered
+    const isLast  = k === nonEmpty.length - 2;       // S6 side must all be covered
+
+    const fromShuf = [...from].sort(()=>rng()-.5);
+    const toShuf   = [...to  ].sort(()=>rng()-.5);
+
+    // Determine how many edges to draw
+    const minCover = Math.max(
+      isFirst ? from.length : 0,  // cover every S1 firm
+      isLast  ? to.length   : 0   // cover every S6 firm
+    );
+    const cap = Math.max(minCover, Math.min(MAX_PER_PAIR, Math.max(from.length, to.length)));
+
+    const covFrom = new Set();
+    const covTo   = new Set();
+
+    for (let i = 0; i < cap; i++) {
+      const f = fromShuf[i % fromShuf.length];
+      const t = toShuf  [i % toShuf.length  ];
+      // Skip duplicate pairs
+      const key = f.key + '>' + t.key;
+      if (covFrom.has(key)) continue;
+      covFrom.add(key);
+      covTo.add(t.key);
+      edges.push({ src: f.node, tgt: t.node, fromSi, toSi });
+    }
+
+    // Ensure every "from" firm has ≥1 edge when it's the first stage
+    if (isFirst) {
+      fromShuf.forEach((f, i) => {
+        if (![...edges].find(e => e.src === f.node && e.fromSi === fromSi)) {
+          edges.push({ src: f.node, tgt: toShuf[i % toShuf.length].node, fromSi, toSi });
+        }
+      });
+    }
+    // Ensure every "to" firm has ≥1 edge when it's the last stage
+    if (isLast) {
+      toShuf.forEach((t, i) => {
+        if (![...edges].find(e => e.tgt === t.node && e.toSi === toSi)) {
+          edges.push({ src: fromShuf[i % fromShuf.length].node, tgt: t.node, fromSi, toSi });
+        }
+      });
+    }
+  }
+  return edges;
+}
+const EDGES = { Wind: genEdges("Wind"), EV: genEdges("EV"), Medical: genEdges("Medical") };
+
+// ── MAP ─────────────────────────────────────────────────────────────────────
+const map = L.map("map", { zoomControl: true, minZoom: 1, maxZoom: 10 })
+              .setView([28, 30], 2);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+  maxZoom: 10
+}).addTo(map);
+
+// ── SVG SETUP ───────────────────────────────────────────────────────────────
+const svgEl    = document.getElementById("viz-svg");
+const defs     = document.getElementById("svg-defs");
+const edgeLayer= document.getElementById("edge-layer");
+const nodeLayer= document.getElementById("node-layer");
+
+// No arrowhead markers
+
+function makeSvgEl(tag) { return document.createElementNS("http://www.w3.org/2000/svg", tag); }
+function setAttrs(el, attrs) { Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); }
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let activeSec    = "Wind";
+let activeStages = new Set(['all']); // 'all' or Set of stage indices (0-5)
+let nodeEls      = {};   // name → <g>
+let edgeEls      = [];   // [{el, src, tgt, fromSi, toSi}]
+
+// ── BUILD VIZ ────────────────────────────────────────────────────────────────
+function buildViz() {
+  while (edgeLayer.firstChild) edgeLayer.removeChild(edgeLayer.firstChild);
+  while (nodeLayer.firstChild) nodeLayer.removeChild(nodeLayer.firstChild);
+  nodeEls = {}; edgeEls = [];
+
+  // Nodes
+  const secFirms = new Set();
+  CHAIN_DATA[activeSec].forEach(stage => stage.forEach(f => secFirms.add(f.name)));
+  secFirms.forEach(name => {
+    const firm = FIRMS[name];
+    if (!firm) return;
+    const si  = firm.stagesBySec[activeSec];
+    const col = STAGE_COLORS[si];
+    const g   = makeSvgEl("g");
+    g.setAttribute("pointer-events","visiblePainted");
+    g.dataset.si = si; g.dataset.name = name;
+    g.style.cursor = "pointer";
+
+    if (firm.status === "VERIFY") {
+      const ring = makeSvgEl("circle");
+      setAttrs(ring, { r:"10", fill:"none", stroke:"#ffc107", "stroke-width":"2", "stroke-dasharray":"3 2" });
+      g.appendChild(ring);
+    }
+    const circ = makeSvgEl("circle");
+    setAttrs(circ, { r:"6", fill:col, stroke:"white", "stroke-width":"1.8" });
+    g.appendChild(circ);
+
+    // Label (hidden until zoom ≥ 5)
+    const lbl = makeSvgEl("text");
+    setAttrs(lbl, {
+      x:"9", y:"4", "font-size":"10", "font-family":"-apple-system,sans-serif",
+      "font-weight":"600", "fill":"#222",
+      "paint-order":"stroke", stroke:"white", "stroke-width":"3", "stroke-linejoin":"round",
+      class:"firm-lbl", opacity:"0"
+    });
+    const short = name.length > 30 ? name.slice(0,28)+"…" : name;
+    lbl.textContent = short;
+    g.appendChild(lbl);
+
+    g.addEventListener("mouseenter", ev => showTT(ev, firm, si));
+    g.addEventListener("mouseleave", () => { document.getElementById("tooltip").style.display="none"; });
+    g.addEventListener("click", ev => { ev.stopPropagation(); showTT(ev, firm, si); });
+
+    nodeLayer.appendChild(g);
+    nodeEls[name] = g;
+  });
+
+  reposition();
+  applyStageFilter();
+  updateStats();
+}
+
+// ── REPOSITION ───────────────────────────────────────────────────────────────
+function pt(lat, lng) {
+  const p = map.latLngToContainerPoint([lat, lng]);
+  return [p.x, p.y];
+}
+function reposition() {
+  edgeEls.forEach(({ el, src, tgt }) => {
+    const [x1,y1] = pt(src.lat, src.lng);
+    const [x2,y2] = pt(tgt.lat, tgt.lng);
+    const dist = Math.hypot(x2-x1, y2-y1);
+    const bow  = Math.min(50, dist * 0.28);
+    const mx   = (x1+x2)/2;
+    const my   = (y1+y2)/2 - bow;
+    el.setAttribute("d", `M${x1},${y1} Q${mx},${my} ${x2},${y2}`);
+  });
+  Object.entries(nodeEls).forEach(([name, g]) => {
+    const f = FIRMS[name];
+    const [x,y] = pt(f.lat, f.lng);
+    g.setAttribute("transform", `translate(${x},${y})`);
+  });
+}
+
+// ── FILTER / VISIBILITY ───────────────────────────────────────────────────────
+function applyStageFilter() {
+  const z    = map.getZoom();
+  const isAll = activeStages.has('all');
+
+  // Labels: appear when zoomed in
+  svgEl.querySelectorAll(".firm-lbl").forEach(lbl =>
+    lbl.setAttribute("opacity", z >= 5 ? "1" : "0")
+  );
+
+  // Edges: show only in All mode OR when BOTH adjacent stages are selected
+  edgeEls.forEach(({ el, fromSi, toSi }) => {
+    const show = isAll || (activeStages.has(fromSi) && activeStages.has(toSi));
+    el.setAttribute("stroke-opacity", show ? "0.40" : "0");
+    el.style.pointerEvents = show ? "none" : "none";
+  });
+
+  // Nodes: show only stages in the active set (hide others completely)
+  Object.entries(nodeEls).forEach(([, g]) => {
+    const si   = parseInt(g.dataset.si);
+    const show = isAll || activeStages.has(si);
+    g.style.display = show ? "" : "none";
+  });
+}
+
+// ── TOOLTIP ───────────────────────────────────────────────────────────────────
+function showTT(ev, firm, si) {
+  const tt = document.getElementById("tooltip");
+  const secs = Object.keys(firm.sectors).map(s => SECTOR_LABELS[s]).join(", ");
+  tt.innerHTML = `
+    <h4>${firm.name}</h4>
+    <div class="tt-row"><span class="tt-lbl">Country</span><span class="tt-val">${firm.country||"—"}</span></div>
+    <div class="tt-row"><span class="tt-lbl">Stage</span><span class="tt-val tt-stage" style="color:${STAGE_COLORS[si]}">${STAGE_NAMES[si]}</span></div>
+    <div class="tt-row"><span class="tt-lbl">Status</span><span class="tt-val">${firm.status}</span></div>
+    <div class="tt-row"><span class="tt-lbl">Sectors</span><span class="tt-val">${secs}</span></div>
+    ${firm.note ? `<div class="tt-note">${firm.note.length>200?firm.note.slice(0,200)+"…":firm.note}</div>` : ""}`;
+  const wrap = document.getElementById("map-wrap").getBoundingClientRect();
+  let tx = ev.clientX - wrap.left + 14;
+  let ty = ev.clientY - wrap.top  - 14;
+  if (tx + 300 > wrap.width)  tx = ev.clientX - wrap.left - 304;
+  if (ty + 220 > wrap.height) ty = ev.clientY - wrap.top  - 220;
+  tt.style.left = tx+"px"; tt.style.top = ty+"px"; tt.style.display = "block";
+}
+document.getElementById("map").addEventListener("click", () => {
+  document.getElementById("tooltip").style.display = "none";
+});
+
+// ── STATS ──────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const firms = new Set();
+  CHAIN_DATA[activeSec].forEach(st => st.forEach(f => firms.add(f.name)));
+  let r=0,v=0;
+  firms.forEach(k => { const f=FIRMS[k]; if(f.status==="RELEVANT")r++;else if(f.status==="VERIFY")v++; });
+  document.getElementById("stats").innerHTML =
+    `<b>${SECTOR_LABELS[activeSec]}</b> · ${firms.size} firms · <span style="color:#2e7d32">✅ ${r}</span> · <span style="color:#e65100">⚠️ ${v}</span>`;
+}
+
+// ── CONTROLS ───────────────────────────────────────────────────────────────────
+function setSector(s) {
+  activeSec = s;
+  document.querySelectorAll(".sec-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("stab-"+s).classList.add("active");
+  buildViz();
+}
+const SB_COLORS = ["#7B0D0D","#3A1078","#0B3B82","#064E3B","#EA580C","#16A34A"];
+
+function setStage(s) {
+  if (s === 'all') {
+    activeStages = new Set(['all']);
+  } else {
+    if (activeStages.has('all')) {
+      // Leaving "All" mode — start with just this stage
+      activeStages = new Set([s]);
+    } else {
+      // Toggle this stage on/off
+      if (activeStages.has(s)) {
+        activeStages.delete(s);
+        if (activeStages.size === 0) activeStages = new Set(['all']); // fallback
+      } else {
+        activeStages.add(s);
+      }
+    }
+  }
+  refreshStageBtns();
+  applyStageFilter();
+}
+
+function refreshStageBtns() {
+  const isAll = activeStages.has('all');
+  // All button
+  const allBtn = document.getElementById("sb-all");
+  allBtn.classList.toggle("active", isAll);
+  allBtn.style.background = isAll ? "#555" : "white";
+  allBtn.style.color      = isAll ? "white" : "#555";
+  // Stage buttons
+  for (let i = 0; i < 6; i++) {
+    const b = document.getElementById("sb-"+i);
+    if (!b) continue;
+    const on = !isAll && activeStages.has(i);
+    b.classList.toggle("active", on);
+    b.style.background = on ? SB_COLORS[i] : "white";
+    b.style.color      = on ? "white"       : SB_COLORS[i];
+  }
+}
+
+// ── MAP EVENTS ─────────────────────────────────────────────────────────────────
+map.on("move", reposition);
+map.on("zoomstart", () => { svgEl.style.visibility = "hidden"; });
+map.on("zoomend", () => {
+  svgEl.style.visibility = "visible";
+  reposition();
+  applyStageFilter();
+  const z = map.getZoom();
+  document.getElementById("zoom-tip").style.opacity = z >= 5 ? "0" : "0.9";
+});
+
+// ── INIT ────────────────────────────────────────────────────────────────────────
+buildViz();
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ from app.schemas.passport import PassportCreate, PassportUpdate, PassportOut
 from app.schemas.user import RegisterRequest, LoginRequest
 from app.auth import hash_password, verify_password, create_token, get_current_user, require_roles
 from app.utils import log_action, composition_presence, composition_ranges, composition_exact, composition_full
+from app.models.provenance import Provenance
 
 router = APIRouter()
 
@@ -49,6 +50,14 @@ def logout(user: User = Depends(get_current_user)):
     # JWT is stateless — actual logout is handled client-side by discarding the token
     return {"message": "Logged out successfully"}
 
+@router.get("/auth/me")
+def get_current_user_info(user: User = Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+    }
+
 # -- passport --
 
 @router.post("/passport", response_model=PassportOut)
@@ -79,24 +88,48 @@ def update_passport(id: int, data: PassportUpdate, db: Session = Depends(get_db)
     db.refresh(passport)
     log_action(db, user.id, "UPDATE_PASSPORT", "passport", id)
     return passport
-
 @router.get("/passport/{id}/provenance")
-def get_provenance(id: int, db: Session = Depends(get_db), user: User = Depends(require_roles(ALL_ROLES))):
-    edges = db.query(SupplyChainEdge).all()
-    targets = {e.target_company for e in edges}
-    sources = {e.source_company for e in edges}
-    path = []
-    current = id
-    visited = set()
-    while current and current not in visited:
-        visited.add(current)
-        company = db.query(Company).filter(Company.id == current).first()
-        if company:
-            path.append(company.name)
-        next_edge = next((e for e in edges if e.source_company == current), None)
-        current = next_edge.target_company if next_edge else None
-    log_action(db, user.id, "VIEW_PROVENANCE", "passport", id)
-    return {"path": path}
+def get_provenance(
+    id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles(ALL_ROLES))
+):
+
+    records = (
+        db.query(Provenance)
+        .filter(
+            Provenance.passport_id == id
+        )
+        .order_by(
+            Provenance.timestamp
+        )
+        .all()
+    )
+
+
+    path = [
+        {
+            "stage": r.stage,
+            "organisation": r.organisation,
+            "country": r.country,
+            "timestamp": r.timestamp
+        }
+        for r in records
+    ]
+
+
+    log_action(
+        db,
+        user.id,
+        "VIEW_PROVENANCE",
+        "passport",
+        id
+    )
+
+
+    return {
+        "path": path
+    }
 
 @router.get("/passport/{id}/composition")
 def get_composition(id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
