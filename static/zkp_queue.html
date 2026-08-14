@@ -235,8 +235,8 @@ async function computePoseidon(a, b) {
 
 // ── RECYCLER ──────────────────────────────────────────────────────────────────
 
-let recyclerDc = null, recSharedKey = null;
-let recReceivedCommitment = null, recReceivedProof = null, recReceivedPubSig = null, recPayload1 = null;
+let recyclerDc = null;
+let recReceivedCommitment = null, recReceivedProof = null, recReceivedPubSig = null;
 let recTargetUid = null;
 
 async function initRecycler() {
@@ -260,30 +260,22 @@ async function initRecycler() {
   let pendingCandidates = [], answerReceived = false, sessionWs = null;
 
   dc.onopen = async () => {
-    setRecStatus("Channel open — initiating key exchange...", "ok");
-    ecdhKP = await generateECDH();
-    dc.send(JSON.stringify({type:"dh_init", publicKey: await exportECDHPub(ecdhKP)}));
+    setRecStatus("Channel open — sending ZKP request...", "ok");
+    dc.send(JSON.stringify({
+      type:"zkp_request", element:form.element, operator:form.operator,
+      threshold:form.threshold, passport_id:form.passport_id
+    }));
+    setRecStatus("Awaiting ZK proof from manufacturer...", "warn");
   };
 
   dc.onmessage = async (evt) => {
     let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-
-    if (msg.type === "dh_response") {
-      recSharedKey = await deriveSharedKey(ecdhKP.privateKey, msg.publicKey);
-      setRecStatus("Key exchange complete — sending ZKP request...", "ok");
-      dc.send(JSON.stringify({
-        type:"zkp_request", element:form.element, operator:form.operator,
-        threshold:form.threshold, passport_id:form.passport_id
-      }));
-      setRecStatus("Awaiting ZK proof from manufacturer...", "warn");
-    }
 
     if (msg.type === "zkp_result") {
       dc.close();
       recReceivedCommitment = msg.publicSignals[1];
       recReceivedProof      = msg.proof;
       recReceivedPubSig     = msg.publicSignals;
-      recPayload1           = msg.payload_1;
       await verifyAndShow(msg, form);
     }
   };
@@ -390,33 +382,18 @@ async function verifyOnLedger() {
     if (!entries.length) { out.textContent = "No ledger entry found for this passport."; btn.disabled = false; btn.textContent = "Check ledger"; return; }
     const entry = entries[0];
 
-    // Check A: commitment matches
+    // Check A: commitment on ledger matches what was received over WebRTC
     const checkA = entry.commitment === recReceivedCommitment;
 
-    // Check B: AES decrypt → display decrypted value; Poseidon check if circomlibjs available
-    let checkB = null, decVal = null;
-    if (recSharedKey && recPayload1) {
-      try {
-        const dec = await aesDecrypt(recPayload1, recSharedKey);
-        decVal = (dec.value_scaled / 10).toFixed(1);
-        const poseidon = await getPoseidon();
-        if (poseidon) {
-          const computed = await computePoseidon(dec.value_scaled, dec.salt);
-          checkB = computed === entry.commitment;
-        }
-      } catch { checkB = null; }
-    }
-
-    // Check C: proof identical
+    // Check C: proof on ledger is identical to what was received over WebRTC
     const checkC = JSON.stringify(entry.zk_proof) === JSON.stringify(recReceivedProof);
 
-    const allPass = checkA && checkC && (checkB === null || checkB === true);
+    const allPass = checkA && checkC;
 
     out.innerHTML = `
       <div class="result-card ${allPass?"result-pass":"result-fail"}" style="margin-top:0">
         <p class="result-headline" style="margin-bottom:12px">${allPass?"Ledger consistent":"Tamper detected"}</p>
         <div class="check-row"><span class="check-label">A — Ledger commitment matches received</span><span class="${checkA?"check-pass":"check-fail"}">${checkA?"✓ Pass":"✗ Fail"}</span></div>
-        <div class="check-row"><span class="check-label">B — AES payload hashes to commitment${decVal?` (value: ${decVal}%)`:""}</span><span class="${checkB===null?"check-na":checkB?"check-pass":"check-fail"}">${checkB===null?"— No circomlibjs":checkB?"✓ Pass":"✗ Fail"}</span></div>
         <div class="check-row"><span class="check-label">C — Ledger ZK proof matches received</span><span class="${checkC?"check-pass":"check-fail"}">${checkC?"✓ Pass":"✗ Fail"}</span></div>
       </div>`;
 
@@ -509,10 +486,9 @@ async function handleOffer(offerMsg) {
   pc.ondatachannel = (evt) => {
     const dc = evt.channel;
     activeSessions[recycler_uid].dc = dc;
-    dc.onopen = () => { sessionWs.close(); updateCardStatus(cardId, "Channel open — waiting for key exchange...", "ok"); };
+    dc.onopen = () => { sessionWs.close(); updateCardStatus(cardId, "Channel open — waiting for ZKP request...", "ok"); };
     dc.onmessage = (msgEvt) => {
       let msg; try { msg = JSON.parse(msgEvt.data); } catch { return; }
-      if (msg.type === "dh_init")    handleDHInit(cardId, recycler_uid, msg);
       if (msg.type === "zkp_request") handleZkpRequest(cardId, recycler_uid, msg);
     };
     dc.onerror = () => updateCardStatus(cardId, "Data channel error.", "err");
@@ -608,19 +584,15 @@ async function generateAndSend(cardId, recyclerUid) {
 
     document.getElementById(cardId+"-proof-label").textContent = "Encrypting...";
     const n_hex  = await fetchHEKey();
-    const payload1 = await aesEncrypt({value_scaled:valueScaled, salt}, session.sharedKey);
     const payload2 = paillierEncrypt(valueScaled, n_hex);
 
     session.proof         = proof;
     session.publicSignals = publicSignals;
     session.commitment    = publicSignals[1];
-    session.payload1      = payload1;
     session.payload2      = payload2;
     session.salt          = salt;
 
-    session.dc.send(JSON.stringify({
-      type:"zkp_result", proof, publicSignals, payload_1:payload1
-    }));
+    session.dc.send(JSON.stringify({type:"zkp_result", proof, publicSignals}));
 
     document.getElementById(cardId+"-proof-anim").classList.remove("visible");
     document.getElementById(cardId+"-btn-ledger").style.display = "inline-flex";
@@ -648,7 +620,7 @@ async function submitToLedger(cardId, recyclerUid) {
         operator: session.operator,
         threshold: session.threshold,
         commitment: session.commitment,
-        payload_1: session.payload1,
+        salt: session.salt,
         payload_2: session.payload2,
         zk_proof: JSON.stringify(session.proof),
         public_signals: JSON.stringify(session.publicSignals)

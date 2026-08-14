@@ -13,9 +13,9 @@ class LedgerEntry(Base):
     element = Column(String(10), nullable=False)
     operator = Column(String(5), nullable=False)    # gt / lt
     threshold = Column(Float, nullable=False)
-    commitment = Column(String(100), nullable=False) # Poseidon hash as decimal string
-    payload_1 = Column(Text, nullable=False)         # AES-GCM ciphertext JSON {iv, ct}
-    payload_2 = Column(Text, nullable=False)         # Paillier ciphertext decimal string
+    commitment = Column(String(100), nullable=False) # Poseidon(value_scaled, salt)
+    salt = Column(Text, nullable=False)              # random 248-bit — allows server to verify commitment against payload_2
+    payload_2 = Column(Text, nullable=False)         # Paillier(value_scaled)
     zk_proof = Column(Text, nullable=False)          # JSON
     public_signals = Column(Text, nullable=False)    # JSON array
     tampered = Column(Boolean, nullable=False, default=False)

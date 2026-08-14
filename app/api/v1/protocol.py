@@ -36,10 +36,10 @@ class LedgerSubmit(BaseModel):
     operator: str
     threshold: float
     commitment: str
-    payload_1: str   # JSON string {iv, ct}
-    payload_2: str   # Paillier ciphertext decimal string
-    zk_proof: str    # JSON string
-    public_signals: str  # JSON array string
+    salt: str           # allows server to verify Poseidon(value_scaled, salt) === commitment
+    payload_2: str      # Paillier(value_scaled)
+    zk_proof: str       # JSON string
+    public_signals: str # JSON array string
 
 
 # ── HE public key ────────────────────────────────────────────────────────────
@@ -119,6 +119,22 @@ def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: Cu
     # _assert_authorized(user.supabase_uid, data.recycler_uid, db)
     mfr_id = _resolve_peer_id(user.supabase_uid, db)
     rec_id  = _resolve_peer_id(data.recycler_uid, db)
+
+    # arithmetic consistency check: decrypt payload_2 and verify against public signals
+    try:
+        sigs = json.loads(data.public_signals)
+        value_scaled_dec = _HE_SK.decrypt(paillier.EncryptedNumber(_HE_PK, int(data.payload_2), exponent=0))
+        result_sig       = int(sigs[0])
+        threshold_scaled = int(sigs[2])
+        is_gt            = int(sigs[3])
+        expected_result  = int(value_scaled_dec > threshold_scaled) if is_gt else int(value_scaled_dec < threshold_scaled)
+        if expected_result != result_sig:
+            raise HTTPException(status_code=400, detail="payload_2 is inconsistent with public signals")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Could not verify payload_2 consistency")
+
     entry = LedgerEntry(
         passport_id=data.passport_id,
         manufacturer_id=mfr_id,
@@ -127,7 +143,7 @@ def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: Cu
         operator=data.operator,
         threshold=data.threshold,
         commitment=data.commitment,
-        payload_1=data.payload_1,
+        salt=data.salt,
         payload_2=data.payload_2,
         zk_proof=data.zk_proof,
         public_signals=data.public_signals,
@@ -155,7 +171,7 @@ def get_ledger_entry(
         "manufacturer_id": e.manufacturer_id, "recycler_id": e.recycler_id,
         "element": e.element, "operator": e.operator, "threshold": e.threshold,
         "commitment": e.commitment,
-        "payload_1": e.payload_1, "payload_2": e.payload_2,
+        "payload_2": e.payload_2,
         "zk_proof": json.loads(e.zk_proof),
         "public_signals": json.loads(e.public_signals),
         "tampered": e.tampered, "submitted_at": e.submitted_at
