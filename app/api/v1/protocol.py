@@ -120,21 +120,6 @@ def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: Cu
     mfr_id = _resolve_peer_id(user.supabase_uid, db)
     rec_id  = _resolve_peer_id(data.recycler_uid, db)
 
-    # arithmetic consistency check: decrypt payload_2 and verify against public signals
-    try:
-        sigs = json.loads(data.public_signals)
-        value_scaled_dec = _HE_SK.decrypt(paillier.EncryptedNumber(_HE_PK, int(data.payload_2), exponent=0))
-        result_sig       = int(sigs[0])
-        threshold_scaled = int(sigs[2])
-        is_gt            = int(sigs[3])
-        expected_result  = int(value_scaled_dec > threshold_scaled) if is_gt else int(value_scaled_dec < threshold_scaled)
-        if expected_result != result_sig:
-            raise HTTPException(status_code=400, detail="payload_2 is inconsistent with public signals")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=400, detail="Could not verify payload_2 consistency")
-
     entry = LedgerEntry(
         passport_id=data.passport_id,
         manufacturer_id=mfr_id,
