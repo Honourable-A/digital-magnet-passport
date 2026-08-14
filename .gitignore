@@ -18,3 +18,5 @@ build/
 .idea/
 .vscode/
 ToDo.txt
+node_modules
+.next/
