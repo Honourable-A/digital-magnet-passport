@@ -1,16 +1,20 @@
 import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from pathlib import Path
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from phe import paillier
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.mr_relationship import MRRelationship
 from app.models.ledger_entry import LedgerEntry
 from app.models.peer_session import PeerSession
 from app.schemas.user import CurrentUser
 from app.auth import get_current_user, require_roles
+from app.zkp_verify import verify_groth16
+
+_VK = json.loads((Path(__file__).parents[3] / "static/zkp/verification_key.json").read_text())
 
 router = APIRouter()
 
@@ -108,6 +112,17 @@ def _assert_authorized(manufacturer_uid: str, recycler_uid: str, db: Session):
 
 # ── Ledger ───────────────────────────────────────────────────────────────────
 
+def _run_zk_verification(entry_id: int, public_signals: list, proof: dict):
+    db = SessionLocal()
+    try:
+        valid = verify_groth16(_VK, public_signals, proof)
+        entry = db.query(LedgerEntry).filter_by(id=entry_id).first()
+        if entry:
+            entry.zk_valid = valid
+            db.commit()
+    finally:
+        db.close()
+
 def _resolve_peer_id(uid: str, db: Session) -> int:
     peer = db.query(PeerSession).filter_by(supabase_uid=uid).order_by(PeerSession.id.desc()).first()
     if not peer:
@@ -115,7 +130,7 @@ def _resolve_peer_id(uid: str, db: Session) -> int:
     return peer.id
 
 @router.post("/ledger", status_code=201)
-def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: CurrentUser = Depends(require_roles(["MANUFACTURER"]))):
+def submit_to_ledger(data: LedgerSubmit, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: CurrentUser = Depends(require_roles(["MANUFACTURER"]))):
     # _assert_authorized(user.supabase_uid, data.recycler_uid, db)
     mfr_id = _resolve_peer_id(user.supabase_uid, db)
     rec_id  = _resolve_peer_id(data.recycler_uid, db)
@@ -136,7 +151,15 @@ def submit_to_ledger(data: LedgerSubmit, db: Session = Depends(get_db), user: Cu
     db.add(entry)
     db.commit()
     db.refresh(entry)
-    return {"id": entry.id, "submitted_at": entry.submitted_at}
+
+    background_tasks.add_task(
+        _run_zk_verification,
+        entry.id,
+        json.loads(data.public_signals),
+        json.loads(data.zk_proof)
+    )
+
+    return {"id": entry.id, "submitted_at": entry.submitted_at, "zk_valid": None}
 
 @router.get("/ledger/{passport_id}")
 def get_ledger_entry(
@@ -159,7 +182,7 @@ def get_ledger_entry(
         "payload_2": e.payload_2,
         "zk_proof": json.loads(e.zk_proof),
         "public_signals": json.loads(e.public_signals),
-        "tampered": e.tampered, "submitted_at": e.submitted_at
+        "zk_valid": e.zk_valid, "tampered": e.tampered, "submitted_at": e.submitted_at
     } for e in entries]
 
 @router.get("/ledger")
@@ -169,7 +192,7 @@ def list_ledger(db: Session = Depends(get_db), user: CurrentUser = Depends(requi
         "id": e.id, "passport_id": e.passport_id,
         "manufacturer_id": e.manufacturer_id, "recycler_id": e.recycler_id,
         "element": e.element, "operator": e.operator, "threshold": e.threshold,
-        "commitment": e.commitment, "tampered": e.tampered, "submitted_at": e.submitted_at
+        "commitment": e.commitment, "zk_valid": e.zk_valid, "tampered": e.tampered, "submitted_at": e.submitted_at
     } for e in entries]
 
 @router.post("/ledger/{entry_id}/flag")

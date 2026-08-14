@@ -95,13 +95,14 @@
           <th>CONDITION</th>
           <th>THRESHOLD</th>
           <th>COMMITMENT</th>
+          <th>ZK VALID</th>
           <th>STATUS</th>
           <th>SUBMITTED</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="ledger-body">
-        <tr><td colspan="11" class="empty-state">Loading...</td></tr>
+        <tr><td colspan="12" class="empty-state">Loading...</td></tr>
       </tbody>
     </table>
   </div>
@@ -138,13 +139,13 @@ function timeAgo(iso) {
 async function loadLedger() {
   const filter = document.getElementById("filter-passport").value.trim();
   const tbody  = document.getElementById("ledger-body");
-  tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Loading...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Loading...</td></tr>`;
   try {
     const resp = await fetch(`${API}/ledger`, {headers: apiHeaders()});
-    if (resp.status === 403) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Access denied — requires AUDITOR role.</td></tr>`; return; }
+    if (resp.status === 403) { tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Access denied — requires AUDITOR role.</td></tr>`; return; }
     let rows = await resp.json();
     if (filter) rows = rows.filter(r => r.passport_id.includes(filter));
-    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No entries found.</td></tr>`; return; }
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="12" class="empty-state">No entries found.</td></tr>`; return; }
 
     tbody.innerHTML = rows.map(e => {
       const op = e.operator === "gt" ? ">" : "<";
@@ -152,22 +153,28 @@ async function loadLedger() {
       const tamperBadge = e.tampered
         ? `<span class="badge badge-tampered">Tampered</span>`
         : `<span class="badge badge-ok">Clean</span>`;
+      const zkBadge = e.zk_valid === null || e.zk_valid === undefined
+        ? `<span class="badge" style="background:#f4f4f5;color:#71717a">Pending</span>`
+        : e.zk_valid
+          ? `<span class="badge badge-ok">Valid</span>`
+          : `<span class="badge badge-tampered">Invalid</span>`;
       return `<tr>
         <td class="td-muted">${e.id}</td>
         <td><span style="font-weight:500">${e.passport_id}</span></td>
-        <td class="td-mono">${e.manufacturer_uid.slice(0,8)}…</td>
-        <td class="td-mono">${e.recycler_uid.slice(0,8)}…</td>
+        <td class="td-mono">${e.manufacturer_id}</td>
+        <td class="td-mono">${e.recycler_id}</td>
         <td>${e.element}</td>
         <td>${op}</td>
         <td>${e.threshold}%</td>
         <td class="td-mono" title="${e.commitment}">${commitShort}</td>
+        <td>${zkBadge}</td>
         <td>${tamperBadge}</td>
         <td class="td-muted">${timeAgo(e.submitted_at)}</td>
         <td><button class="btn btn-outline btn-sm" onclick="showDetail(${JSON.stringify(JSON.stringify(e))})">View</button></td>
       </tr>`;
     }).join("");
   } catch(err) {
-    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Error: ${err.message}</td></tr>`;
   }
 }
 

@@ -18,5 +18,6 @@ class LedgerEntry(Base):
     payload_2 = Column(Text, nullable=False)         # Paillier(value_scaled)
     zk_proof = Column(Text, nullable=False)          # JSON
     public_signals = Column(Text, nullable=False)    # JSON array
+    zk_valid = Column(Boolean, nullable=True)     # None = pending, True = valid, False = invalid
     tampered = Column(Boolean, nullable=False, default=False)
     submitted_at = Column(DateTime, default=datetime.utcnow)
