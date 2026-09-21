@@ -1,22 +1,22 @@
 "use client";
 
-
 import {
   useEffect,
   useState
 } from "react";
-
 
 import {
   CheckCircle2,
   XCircle
 } from "lucide-react";
 
-
 import {
   getVerificationClaims
 } from "@/lib/api/passport-details";
 
+import {
+  useRoleStore
+} from "@/store/role-store";
 
 
 function formatClaimType(
@@ -54,6 +54,12 @@ export default function Verification({
 
   const [restricted,setRestricted] =
     useState(false);
+
+
+
+  const role = useRoleStore(
+    (state) => state.role
+  );
 
 
 
@@ -161,48 +167,109 @@ export default function Verification({
 
 
 
-  if(claims.length === 0){
-
-
-    return (
-
-      <div className="rounded-lg border p-6">
-
-
-        <h3 className="font-semibold">
-          No Verification Claims
-        </h3>
-
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          No verification records are available
-          for this passport.
-        </p>
-
-
-      </div>
-
-    );
-
-  }
-
-
-
-
-
   return (
 
     <div className="space-y-4">
 
 
+      {/* ZKP Verification Request */}
+
       {
+        role === "Recycler" && (
+
+          <div className="rounded-lg border p-4">
+
+
+            <h3 className="font-semibold">
+              ZKP Verification
+            </h3>
+
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Request a privacy-preserving verification
+              proof for this passport.
+            </p>
+
+
+            <button
+
+              className="
+              mt-3
+              rounded-md
+              bg-primary
+              px-4
+              py-2
+              text-sm
+              text-white
+              "
+
+              onClick={()=>{
+
+                console.log(
+                  "REQUEST ZKP FOR PASSPORT:",
+                  passportId
+                );
+
+              }}
+
+            >
+
+              Request ZKP Verification
+
+            </button>
+
+
+          </div>
+
+        )
+      }
+
+
+
+
+
+      {/* Existing Verification Claims */}
+
+      {
+        claims.length === 0 ? (
+
+
+          <div className="rounded-lg border p-6">
+
+
+            <h3 className="font-semibold">
+              No Verification Claims
+            </h3>
+
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              No verification records are available
+              for this passport.
+            </p>
+
+
+          </div>
+
+
+        )
+
+        :
+
+
         claims.map(
           (claim)=>(
 
 
             <div
+
               key={claim.claim_id}
-              className="rounded-lg border p-4"
+
+              className="
+              rounded-lg
+              border
+              p-4
+              "
+
             >
 
 
@@ -213,11 +280,13 @@ export default function Verification({
 
 
                   <p className="font-semibold">
+
                     {
                       formatClaimType(
                         claim.claim_type
                       )
                     }
+
                   </p>
 
 
@@ -235,6 +304,7 @@ export default function Verification({
 
 
                 </div>
+
 
 
 
@@ -268,11 +338,13 @@ export default function Verification({
                     <>
 
                       <XCircle
+
                         className="
                         h-5
                         w-5
                         text-red-600
                         "
+
                       />
 
                       <span>
@@ -280,7 +352,6 @@ export default function Verification({
                       </span>
 
                     </>
-
 
                   }
 
@@ -295,7 +366,9 @@ export default function Verification({
 
 
           )
+
         )
+
       }
 
 
