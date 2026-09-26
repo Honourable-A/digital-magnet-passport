@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Auditor Ledger — TRACE4MAGNET</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --background: #ffffff; --foreground: #09090b; --card: #ffffff;
+      --primary: #18181b; --primary-foreground: #fafafa;
+      --secondary: #f4f4f5; --secondary-foreground: #18181b;
+      --muted: #f4f4f5; --muted-foreground: #71717a;
+      --border: #e4e4e7; --input: #e4e4e7; --ring: #a1a1aa;
+      --destructive: #dc2626;
+      --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 14px; --radius-4xl: 26px;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--background); color: var(--foreground); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .brand { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand span { color: var(--muted-foreground); font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted-foreground); }
+    .back-link { font-size: 13px; color: var(--muted-foreground); text-decoration: none; font-weight: 500; cursor: pointer; }
+    .back-link:hover { color: var(--foreground); }
+    main { padding: 32px 24px; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.025em; }
+    .page-desc { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; }
+    .card { background: var(--card); border-radius: var(--radius-xl); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); padding: 24px; }
+    .card-title { font-size: 15px; font-weight: 500; }
+    .card-desc { font-size: 13px; color: var(--muted-foreground); margin-top: 3px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; height: 36px; padding: 0 16px; border: 1px solid transparent; cursor: pointer; transition: all 120ms; font-family: inherit; }
+    .btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+    .btn-primary { background: var(--primary); color: var(--primary-foreground); } .btn-primary:hover { opacity: 0.85; }
+    .btn-outline { background: var(--background); border-color: var(--border); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.04); } .btn-outline:hover { background: var(--muted); }
+    .btn-sm { height: 28px; font-size: 12px; padding: 0 10px; border-radius: var(--radius-sm); }
+    .input { height: 36px; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--background); padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--foreground); outline: none; transition: border-color 120ms, box-shadow 120ms; }
+    .input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(161,161,170,0.25); }
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th { height: 40px; padding: 0 12px; text-align: left; font-size: 12px; font-weight: 500; color: var(--muted-foreground); white-space: nowrap; }
+    td { padding: 10px 12px; vertical-align: middle; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 100ms; }
+    tbody tr:hover { background: rgba(244,244,245,0.6); }
+    tbody tr:last-child { border-bottom: none; }
+    .td-muted { color: var(--muted-foreground); font-size: 12px; }
+    .td-mono  { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted-foreground); }
+    .badge { display: inline-flex; align-items: center; height: 20px; border-radius: var(--radius-4xl); padding: 0 8px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
+    .badge-tampered { background: rgba(220,38,38,0.08); color: #b91c1c; }
+    .badge-ok { background: #dcfce7; color: #15803d; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--muted-foreground); }
+    .info-value { font-weight: 500; }
+    .info-value.mono { font-family: ui-monospace, monospace; font-size: 11px; word-break: break-all; }
+    .empty-state { text-align: center; padding: 48px; color: var(--muted-foreground); font-size: 13px; }
+    .agg-card { background: var(--secondary); border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 16px; }
+    .agg-value { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; }
+    .agg-label { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; }
+    .suppressed-note { font-size: 13px; color: var(--muted-foreground); font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <span class="brand">TRACE4MAGNET <span>/ Auditor Ledger</span></span>
+  <div class="header-right">
+    <strong id="info-email"></strong>
+    <a class="back-link" onclick="window.location.href='peer_discovery.html'">← Back</a>
+  </div>
+</div>
+
+<main>
+  <div>
+    <h1>Auditor Ledger</h1>
+    <p class="page-desc">All ledger submissions. Use the aggregate to compute encrypted sums without decrypting individual values.</p>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:20px 24px 0;">
+      <div class="toolbar">
+        <input class="input" id="filter-passport" placeholder="Filter by passport ID..." style="width:260px">
+        <button class="btn btn-outline" onclick="loadLedger()">Refresh</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>PASSPORT</th>
+          <th>MANUFACTURER</th>
+          <th>RECYCLER</th>
+          <th>ELEMENT</th>
+          <th>CONDITION</th>
+          <th>THRESHOLD</th>
+          <th>COMMITMENT</th>
+          <th>STATUS</th>
+          <th>SUBMITTED</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="ledger-body">
+        <tr><td colspan="11" class="empty-state">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">HE Aggregate</div>
+    <p class="card-desc">Compute the encrypted sum of element values for a passport — without decrypting individual contributions. Requires ≥2 contributors.</p>
+    <div class="toolbar" style="margin-bottom:0">
+      <input class="input" id="agg-passport" placeholder="Passport ID" style="width:260px">
+      <button class="btn btn-primary" onclick="runAggregate()">Run aggregate</button>
+    </div>
+    <div id="agg-result"></div>
+  </div>
+</main>
+
+<script>
+const API   = "http://localhost:8000/api/v1";
+const token = sessionStorage.getItem("t4m_token");
+const email = sessionStorage.getItem("t4m_email") || "";
+
+if (!token) window.location.href = "peer_discovery.html";
+document.getElementById("info-email").textContent = email;
+
+function apiHeaders() { return {"Content-Type":"application/json","Authorization":`Bearer ${token}`}; }
+
+function timeAgo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso + "Z")) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+async function loadLedger() {
+  const filter = document.getElementById("filter-passport").value.trim();
+  const tbody  = document.getElementById("ledger-body");
+  tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Loading...</td></tr>`;
+  try {
+    const resp = await fetch(`${API}/ledger`, {headers: apiHeaders()});
+    if (resp.status === 403) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Access denied — requires AUDITOR role.</td></tr>`; return; }
+    let rows = await resp.json();
+    if (filter) rows = rows.filter(r => r.passport_id.includes(filter));
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No entries found.</td></tr>`; return; }
+
+    tbody.innerHTML = rows.map(e => {
+      const op = e.operator === "gt" ? ">" : "<";
+      const commitShort = (e.commitment||"").slice(0,14) + "…";
+      const tamperBadge = e.tampered
+        ? `<span class="badge badge-tampered">Tampered</span>`
+        : `<span class="badge badge-ok">Clean</span>`;
+      return `<tr>
+        <td class="td-muted">${e.id}</td>
+        <td><span style="font-weight:500">${e.passport_id}</span></td>
+        <td class="td-mono">${e.manufacturer_uid.slice(0,8)}…</td>
+        <td class="td-mono">${e.recycler_uid.slice(0,8)}…</td>
+        <td>${e.element}</td>
+        <td>${op}</td>
+        <td>${e.threshold}%</td>
+        <td class="td-mono" title="${e.commitment}">${commitShort}</td>
+        <td>${tamperBadge}</td>
+        <td class="td-muted">${timeAgo(e.submitted_at)}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="showDetail(${JSON.stringify(JSON.stringify(e))})">View</button></td>
+      </tr>`;
+    }).join("");
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function showDetail(jsonStr) {
+  const e = JSON.parse(jsonStr);
+  const op = e.operator === "gt" ? ">" : "<";
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px";
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:28px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <span style="font-size:15px;font-weight:600">Entry #${e.id}</span>
+        <button onclick="this.closest('div[style]').remove()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#71717a">×</button>
+      </div>
+      <div class="info-row"><span class="info-label">Passport</span><span class="info-value mono">${e.passport_id}</span></div>
+      <div class="info-row"><span class="info-label">Manufacturer UID</span><span class="info-value mono">${e.manufacturer_uid}</span></div>
+      <div class="info-row"><span class="info-label">Recycler UID</span><span class="info-value mono">${e.recycler_uid}</span></div>
+      <div class="info-row"><span class="info-label">Element</span><span class="info-value">${e.element}</span></div>
+      <div class="info-row"><span class="info-label">Condition</span><span class="info-value">${op} ${e.threshold}%</span></div>
+      <div class="info-row"><span class="info-label">Tampered</span><span class="info-value" style="color:${e.tampered?"#b91c1c":"#15803d"}">${e.tampered?"Yes — flagged":"No"}</span></div>
+      <div class="info-row"><span class="info-label">Commitment</span><span class="info-value mono" style="font-size:10px;word-break:break-all">${e.commitment}</span></div>
+      <div class="info-row"><span class="info-label">Submitted</span><span class="info-value">${new Date(e.submitted_at+"Z").toLocaleString()}</span></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:12px;font-weight:500;color:var(--muted-foreground);margin-bottom:8px">ZK Proof (raw)</p>
+        <pre style="font-size:10px;background:#f4f4f5;border-radius:6px;padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all">${JSON.stringify(e.zk_proof, null, 2)}</pre>
+        <p style="font-size:12px;font-weight:500;color:var(--muted-foreground);margin-top:12px;margin-bottom:8px">Public Signals</p>
+        <pre style="font-size:10px;background:#f4f4f5;border-radius:6px;padding:10px;overflow-x:auto">${JSON.stringify(e.public_signals)}</pre>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (ev) => { if (ev.target === overlay) overlay.remove(); });
+}
+
+async function runAggregate() {
+  const pid = document.getElementById("agg-passport").value.trim();
+  const out  = document.getElementById("agg-result");
+  if (!pid) { out.innerHTML = `<p style="color:#b91c1c;font-size:13px;margin-top:12px">Enter a passport ID first.</p>`; return; }
+  out.innerHTML = `<p style="color:var(--muted-foreground);font-size:13px;margin-top:12px">Computing...</p>`;
+  try {
+    const resp = await fetch(`${API}/auditor/aggregate/${encodeURIComponent(pid)}`, {headers: apiHeaders()});
+    const data = await resp.json();
+    if (data.suppressed) {
+      out.innerHTML = `<div class="agg-card"><p class="suppressed-note">Aggregate suppressed — ${data.reason} (${data.count} contributor${data.count!==1?"s":""}). Add more ledger entries for this passport.</p></div>`;
+    } else {
+      const ctShort = data.encrypted_sum.slice(0,24) + "…";
+      out.innerHTML = `<div class="agg-card">
+        <p class="agg-label">Encrypted homomorphic sum — ${data.count} contributor${data.count!==1?"s":""}</p>
+        <p style="font-size:12px;font-family:ui-monospace,monospace;margin-top:8px;word-break:break-all;color:var(--muted-foreground)">${ctShort}</p>
+        <p style="font-size:12px;color:var(--muted-foreground);margin-top:8px">Individual values remain encrypted. Ask a REGULATOR to decrypt the aggregate.</p>
+      </div>`;
+    }
+  } catch(err) {
+    out.innerHTML = `<p style="color:#b91c1c;font-size:13px;margin-top:12px">Error: ${err.message}</p>`;
+  }
+}
+
+document.getElementById("filter-passport").addEventListener("input", loadLedger);
+loadLedger();
+</script>
+</body>
+</html>

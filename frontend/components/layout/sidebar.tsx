@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import { useRoleStore } from "@/store/role-store";
-import { Factory } from "lucide-react";
 
 import {
   Bot,
@@ -15,16 +15,23 @@ import {
   Blocks,
   ShieldCheck,
   PlusCircle,
+  Factory,
 } from "lucide-react";
 
 
+
 const navigation = [
+
   {
     name: "Create Passport",
     href: "/create-passport",
     icon: PlusCircle,
-    roles: ["Manufacturer", "Admin"],
+    roles: [
+      "Manufacturer",
+      "Admin",
+    ],
   },
+
 
   {
     name: "Dashboard",
@@ -39,6 +46,7 @@ const navigation = [
     ],
   },
 
+
   {
     name: "Passports",
     href: "/passport",
@@ -51,6 +59,7 @@ const navigation = [
       "Admin",
     ],
   },
+
 
   {
     name: "Provenance Network",
@@ -65,6 +74,7 @@ const navigation = [
     ],
   },
 
+
   {
     name: "Verification",
     href: "/verification",
@@ -75,6 +85,7 @@ const navigation = [
       "Admin",
     ],
   },
+
 
   {
     name: "Compliance",
@@ -87,6 +98,7 @@ const navigation = [
       "Admin",
     ],
   },
+
 
   {
     name: "Circularity",
@@ -101,15 +113,27 @@ const navigation = [
     ],
   },
 
-        
+
   {
-      name:"Recycling",
-      href:"/recycling",
-      icon:Factory,
-      roles:[
-      "Recycler"
-      ]
-      },
+    name: "Manufacturer Queue",
+    href: "/manufacturer",
+    icon: Factory,
+    roles: [
+      "Manufacturer",
+      "Admin",
+    ],
+  },
+
+
+  {
+    name: "Recycling",
+    href: "/recycling",
+    icon: Factory,
+    roles: [
+      "Recycler",
+    ],
+  },
+
 
   {
     name: "Blockchain",
@@ -120,6 +144,7 @@ const navigation = [
       "Admin",
     ],
   },
+
 
   {
     name: "AI Assistant",
@@ -133,32 +158,43 @@ const navigation = [
       "Admin",
     ],
   },
+
 ];
+
 
 
 export function Sidebar() {
 
+
   const pathname = usePathname();
 
+
   const role = useRoleStore(
-    (state) => state.role
+    (state)=>state.role
   );
 
 
-  if (!role) {
+
+  if(!role){
+
     return null;
+
   }
 
 
+
   const allowedNavigation =
-    navigation.filter((item) =>
-      item.roles.includes(role)
+    navigation.filter(
+      (item)=>
+        item.roles.includes(role)
     );
+
 
 
   return (
 
     <aside className="w-64 border-r bg-background">
+
 
       <div className="p-6">
 
@@ -166,69 +202,81 @@ export function Sidebar() {
           TRACE4MAGNET
         </h1>
 
+
         <p className="text-sm text-muted-foreground">
           Digital Magnet Passport
         </p>
 
+
       </div>
+
 
 
       <nav className="space-y-1 px-4">
 
+
         {
-          allowedNavigation.map((item)=>{
+          allowedNavigation.map(
+            (item)=>{
 
-            const Icon = item.icon;
 
-            const isActive =
-              pathname === item.href ||
-              pathname.startsWith(
-                `${item.href}/`
+              const Icon = item.icon;
+
+
+              const isActive =
+                pathname === item.href ||
+                pathname.startsWith(
+                  `${item.href}/`
+                );
+
+
+
+              return (
+
+                <Link
+
+                  key={item.href}
+
+                  href={item.href}
+
+                  className={`
+                    flex
+                    items-center
+                    gap-3
+                    rounded-md
+                    px-3
+                    py-2
+                    text-sm
+                    font-medium
+                    transition
+
+                    ${
+                      isActive
+                      ?
+                      "bg-primary text-primary-foreground"
+                      :
+                      "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }
+                  `}
+
+                >
+
+                  <Icon size={18}/>
+
+                  {item.name}
+
+                </Link>
+
               );
 
 
-            return (
-
-              <Link
-
-                key={item.href}
-
-                href={item.href}
-
-                className={`
-                  flex
-                  items-center
-                  gap-3
-                  rounded-md
-                  px-3
-                  py-2
-                  text-sm
-                  font-medium
-                  transition
-
-                  ${
-                    isActive
-                    ?
-                    "bg-primary text-primary-foreground"
-                    :
-                    "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }
-                `}
-
-              >
-
-                <Icon size={18}/>
-
-                {item.name}
-
-              </Link>
-
-            );
-
-          })
+            }
+          )
         }
 
+
       </nav>
+
 
     </aside>
 

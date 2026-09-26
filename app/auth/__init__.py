@@ -55,70 +55,49 @@ def create_token(payload):
 
 
 
-# -- supabase es256 jwt --
+# -- Supabase access token verification --
+def _get_supabase_user(token: str):
+    """Validate a Supabase access token using the project's Auth API.
 
-_jwks_cache = None
-
-
-
-def _fetch_jwks():
-
-    global _jwks_cache
-
-    if _jwks_cache is None:
-
-        with urllib.request.urlopen(
-            settings.supabase_jwks_url,
-            timeout=5
-        ) as resp:
-
-            _jwks_cache = json.loads(
-                resp.read()
-            )
-
-    return _jwks_cache
-
-
-
-def _decode_supabase_token(token: str):
-
-    header = jwt.get_unverified_header(token)
-
-    kid = header.get("kid")
-
-    jwks = _fetch_jwks()
-
-
-    key = next(
-        (
-            k for k in jwks["keys"]
-            if k.get("kid") == kid
-        ),
-        None
-    )
-
-
-    if key is None and jwks["keys"]:
-
-        key = jwks["keys"][0]
-
-
-    if key is None:
-
+    Supabase projects can use either the legacy shared-secret JWT or newer
+    asymmetric signing keys. Calling /auth/v1/user delegates signature,
+    issuer, expiry, and project validation to the issuing Supabase project.
+    """
+    if not settings.supabase_url or not settings.supabase_anon_key:
         raise HTTPException(
-            status_code=401,
-            detail="No matching JWK found"
+            status_code=500,
+            detail="Supabase authentication is not configured",
         )
 
-
-    return jwt.decode(
-        token,
-        key,
-        algorithms=["ES256"],
-        options={
-            "verify_aud": False
-        }
+    request = urllib.request.Request(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/user",
+        headers={
+            "apikey": settings.supabase_anon_key,
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+        },
     )
+
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            user_data = json.loads(response.read())
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+    user_id = user_data.get("id")
+    email = user_data.get("email")
+    if not user_id or not email:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    metadata = user_data.get("app_metadata") or {}
+    user_metadata = user_data.get("user_metadata") or {}
+    role = metadata.get("role") or user_metadata.get("role") or "PUBLIC"
+
+    return {
+        "supabase_uid": user_id,
+        "email": email,
+        "role": str(role).upper(),
+    }
 
 
 
@@ -140,24 +119,10 @@ def get_current_user(
 
     try:
 
-        if settings.supabase_jwks_url:
+        if settings.supabase_url:
+            from app.schemas.user import CurrentUser
 
-            payload = _decode_supabase_token(
-                token
-            )
-
-            email = payload.get(
-                "email"
-            )
-
-
-            user = (
-                db.query(User)
-                .filter(
-                    User.email == email
-                )
-                .first()
-            )
+            return CurrentUser(**_get_supabase_user(token))
 
 
         else:

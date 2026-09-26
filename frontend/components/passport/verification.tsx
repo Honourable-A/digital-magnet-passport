@@ -18,10 +18,12 @@ import {
   useRoleStore
 } from "@/store/role-store";
 
+import {
+  createZKPRequest
+} from "@/lib/api/zkp";
 
-function formatClaimType(
-  type:string
-){
+
+function formatClaimType(type:string){
 
   return type
     .replaceAll("_"," ")
@@ -37,9 +39,11 @@ function formatClaimType(
 export default function Verification({
 
   passportId,
+  passportIdentifier,
 
 }:{
   passportId:number;
+  passportIdentifier:string;
 }){
 
 
@@ -51,14 +55,21 @@ export default function Verification({
     useState(true);
 
 
-
   const [restricted,setRestricted] =
+    useState(false);
+
+
+  const [zkpStatus,setZkpStatus] =
+    useState<any>(null);
+
+
+  const [zkpLoading,setZkpLoading] =
     useState(false);
 
 
 
   const role = useRoleStore(
-    (state) => state.role
+    (state)=>state.role
   );
 
 
@@ -91,9 +102,7 @@ export default function Verification({
         );
 
 
-        if(
-          error?.code === "42501"
-        ){
+        if(error?.code === "42501"){
 
           setRestricted(true);
 
@@ -108,7 +117,6 @@ export default function Verification({
         setLoading(false);
 
       }
-
 
     }
 
@@ -140,11 +148,9 @@ export default function Verification({
 
   if(restricted){
 
-
     return (
 
       <div className="rounded-lg border p-6">
-
 
         <h3 className="font-semibold">
           Verification Restricted
@@ -172,8 +178,6 @@ export default function Verification({
     <div className="space-y-4">
 
 
-      {/* ZKP Verification Request */}
-
       {
         role === "Recycler" && (
 
@@ -191,6 +195,21 @@ export default function Verification({
             </p>
 
 
+
+            <p className="mt-2 text-sm">
+
+              Passport:
+
+              {" "}
+
+              <span className="font-medium">
+                {passportIdentifier}
+              </span>
+
+            </p>
+
+
+
             <button
 
               className="
@@ -203,20 +222,149 @@ export default function Verification({
               text-white
               "
 
-              onClick={()=>{
+              disabled={zkpLoading}
 
-                console.log(
-                  "REQUEST ZKP FOR PASSPORT:",
-                  passportId
-                );
+
+              onClick={async()=>{
+
+
+                try{
+
+
+                  setZkpLoading(true);
+
+
+                  const result =
+                    await createZKPRequest({
+
+                      passportId:
+                      passportIdentifier,
+
+                      element:
+                      "Nd",
+
+                      operator:
+                      "gt",
+
+                      threshold:
+                      20
+
+                    });
+
+
+
+                  console.log(
+                    "ZKP RESPONSE:",
+                    result
+                  );
+
+
+                  setZkpStatus(result);
+
+
+
+                }
+                catch(error:any){
+
+
+                  console.error(
+                    "ZKP REQUEST FAILED:",
+                    error
+                  );
+
+
+                  setZkpStatus({
+
+                    status:"error",
+
+                    message:
+                    error.message
+
+                  });
+
+
+                }
+                finally{
+
+
+                  setZkpLoading(false);
+
+
+                }
+
 
               }}
 
+
             >
 
-              Request ZKP Verification
+              {
+                zkpLoading
+                ?
+                "Sending Request..."
+                :
+                "Request ZKP Verification"
+              }
+
 
             </button>
+
+
+
+
+
+            {
+              zkpStatus && (
+
+                <div className="mt-4 rounded-lg border p-4">
+
+
+                  <h4 className="font-semibold">
+                    ZKP Verification Status
+                  </h4>
+
+
+
+                  <p className="mt-2 text-sm">
+
+                    Status:
+
+                    {" "}
+
+                    <span className="font-medium">
+
+                      {zkpStatus.status}
+
+                    </span>
+
+                  </p>
+
+
+
+                  <p className="text-sm mt-1">
+
+                    {zkpStatus.message}
+
+                  </p>
+
+
+
+
+                  <p className="text-sm mt-1">
+
+                    Passport:
+
+                    {" "}
+
+                    {zkpStatus.passport_id}
+
+                  </p>
+
+
+                </div>
+
+              )
+            }
 
 
           </div>
@@ -228,11 +376,14 @@ export default function Verification({
 
 
 
-      {/* Existing Verification Claims */}
 
       {
-        claims.length === 0 ? (
+        claims.length === 0
 
+        ?
+
+
+        (
 
           <div className="rounded-lg border p-6">
 
@@ -243,120 +394,121 @@ export default function Verification({
 
 
             <p className="mt-2 text-sm text-muted-foreground">
+
               No verification records are available
               for this passport.
+
             </p>
 
 
           </div>
 
-
         )
+
 
         :
 
 
-        claims.map(
-          (claim)=>(
+        claims.map((claim)=>(
 
 
-            <div
+          <div
 
-              key={claim.claim_id}
+            key={claim.claim_id}
 
-              className="
-              rounded-lg
-              border
-              p-4
-              "
+            className="
+            rounded-lg
+            border
+            p-4
+            "
 
-            >
-
-
-              <div className="flex items-center justify-between">
+          >
 
 
-                <div>
+            <div className="flex items-center justify-between">
 
 
-                  <p className="font-semibold">
-
-                    {
-                      formatClaimType(
-                        claim.claim_type
-                      )
-                    }
-
-                  </p>
+              <div>
 
 
-
-                  <p className="text-sm text-muted-foreground">
-
-                    {
-                      new Date(
-                        claim.verification_date
-                      )
-                      .toLocaleString()
-                    }
-
-                  </p>
-
-
-                </div>
-
-
-
-
-                <div className="flex items-center gap-2">
-
+                <p className="font-semibold">
 
                   {
-                    claim.result
-
-                    ?
-
-                    <>
-
-                      <CheckCircle2
-                        className="
-                        h-5
-                        w-5
-                        text-green-600
-                        "
-                      />
-
-                      <span>
-                        Verified
-                      </span>
-
-                    </>
-
-
-                    :
-
-                    <>
-
-                      <XCircle
-
-                        className="
-                        h-5
-                        w-5
-                        text-red-600
-                        "
-
-                      />
-
-                      <span>
-                        Failed
-                      </span>
-
-                    </>
-
+                    formatClaimType(
+                      claim.claim_type
+                    )
                   }
 
+                </p>
 
-                </div>
+
+
+                <p className="text-sm text-muted-foreground">
+
+                  {
+                    new Date(
+                      claim.verification_date
+                    )
+                    .toLocaleString()
+                  }
+
+                </p>
+
+
+              </div>
+
+
+
+
+
+              <div className="flex items-center gap-2">
+
+
+                {
+                  claim.result
+
+                  ?
+
+                  <>
+
+                    <CheckCircle2
+                      className="
+                      h-5
+                      w-5
+                      text-green-600
+                      "
+                    />
+
+                    <span>
+                      Verified
+                    </span>
+
+                  </>
+
+
+                  :
+
+
+                  <>
+
+                    <XCircle
+
+                      className="
+                      h-5
+                      w-5
+                      text-red-600
+                      "
+
+                    />
+
+                    <span>
+                      Failed
+                    </span>
+
+
+                  </>
+
+                }
 
 
               </div>
@@ -365,9 +517,10 @@ export default function Verification({
             </div>
 
 
-          )
+          </div>
 
-        )
+
+        ))
 
       }
 
