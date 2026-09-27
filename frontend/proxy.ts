@@ -12,6 +12,7 @@ const rolePermissions = {
     "/circularity",
     "/provenance",
     "/assistant",
+    "/manufacturer",
   ],
 
   Recycler:[
@@ -240,6 +241,8 @@ matcher:[
 "/assistant/:path*",
 
 "/recycling/:path*",
+
+"/manufacturer/:path*",
 
 ]
 

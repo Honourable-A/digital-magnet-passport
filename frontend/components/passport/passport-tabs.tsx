@@ -206,7 +206,7 @@ passport.status
 
 
 <TabsContent value="verification">
-<Verification passportId={passport.id}/>
+<Verification passportId={passport.id} passportIdentifier={passport.passport_id}/>
 </TabsContent>
 
 

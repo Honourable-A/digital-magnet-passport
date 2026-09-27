@@ -77,6 +77,15 @@ const navigation = [
   },
 
   {
+    name: "Verification Queue",
+    href: "/manufacturer",
+    icon: ShieldCheck,
+    roles: [
+      "Manufacturer",
+    ],
+  },
+
+  {
     name: "Compliance",
     href: "/compliance",
     icon: ClipboardCheck,
