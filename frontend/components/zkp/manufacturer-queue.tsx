@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 interface QueueSession {
+  key: string; // `${recyclerUid}:${requestId}` — distinct per request, so a
+  // completed/stale request never blocks a later one from the same Recycler.
   recyclerUid: string;
   recyclerName: string;
   status: string;
@@ -25,6 +27,7 @@ interface QueueSession {
   actualValue: string;
   proofGenerated: boolean;
   submitted: boolean;
+  ackReceived: boolean;
   session: ManufacturerSession | null;
   proof?: Record<string, unknown>;
   publicSignals?: string[];
@@ -47,10 +50,17 @@ export default function ManufacturerQueue() {
     sessionsRef.current = sessions;
   }, [sessions]);
 
-  function updateSession(recyclerUid: string, patch: Partial<QueueSession>) {
-    setSessions((prev) =>
-      prev[recyclerUid] ? { ...prev, [recyclerUid]: { ...prev[recyclerUid], ...patch } } : prev,
-    );
+  function updateSession(key: string, patch: Partial<QueueSession>) {
+    setSessions((prev) => (prev[key] ? { ...prev, [key]: { ...prev[key], ...patch } } : prev));
+  }
+
+  // Only actually tears the connection down once both conditions the Prof asked for
+  // are met: the Recycler's ack has arrived, and ledger submission has completed.
+  function maybeCloseSession(key: string) {
+    const s = sessionsRef.current[key];
+    if (!s?.session || !s.ackReceived || !s.submitted) return;
+    s.session.markComplete();
+    s.session.close();
   }
 
   useEffect(() => {
@@ -70,11 +80,14 @@ export default function ManufacturerQueue() {
       offerListener = listenForOffers({
         myUid: user.id,
         onOffer: (offer) => {
+          const key = `${offer.recyclerUid}:${offer.requestId}`;
+
           setSessions((prev) => {
-            if (prev[offer.recyclerUid]) return prev;
+            if (prev[key]) return prev;
             return {
               ...prev,
-              [offer.recyclerUid]: {
+              [key]: {
+                key,
                 recyclerUid: offer.recyclerUid,
                 recyclerName: offer.recyclerName,
                 status: "Establishing WebRTC connection...",
@@ -82,6 +95,7 @@ export default function ManufacturerQueue() {
                 actualValue: "",
                 proofGenerated: false,
                 submitted: false,
+                ackReceived: false,
                 session: null,
               },
             };
@@ -91,10 +105,11 @@ export default function ManufacturerQueue() {
             myUid: user.id,
             recyclerUid: offer.recyclerUid,
             offerSdp: offer.sdp,
-            onStatus: (text, kind) => updateSession(offer.recyclerUid, { status: text, statusKind: kind }),
+            requestId: offer.requestId,
+            onStatus: (text, kind) => updateSession(key, { status: text, statusKind: kind }),
             onMessage: (msg: DataChannelMessage) => {
               if (msg.type === "zkp_request") {
-                updateSession(offer.recyclerUid, {
+                updateSession(key, {
                   passportId: msg.passport_id,
                   element: msg.element,
                   operator: msg.operator,
@@ -102,10 +117,19 @@ export default function ManufacturerQueue() {
                   status: "Request received — enter value and generate proof.",
                   statusKind: "warn",
                 });
+              } else if (msg.type === "zkp_result_ack") {
+                updateSession(key, {
+                  ackReceived: true,
+                  status: msg.success
+                    ? "Recycler verified the proof. Submit to auditor ledger."
+                    : "Recycler could not verify the proof.",
+                  statusKind: msg.success ? "ok" : "warn",
+                });
+                maybeCloseSession(key);
               }
             },
             onChannelOpen: (session) => {
-              updateSession(offer.recyclerUid, {
+              updateSession(key, {
                 session,
                 status: "Channel open — waiting for ZKP request...",
                 statusKind: "ok",
@@ -123,16 +147,16 @@ export default function ManufacturerQueue() {
     };
   }, []);
 
-  async function handleGenerateProof(recyclerUid: string) {
-    const s = sessionsRef.current[recyclerUid];
+  async function handleGenerateProof(key: string) {
+    const s = sessionsRef.current[key];
     if (!s?.session || s.threshold === undefined || !s.element || !s.operator) return;
     const val = parseFloat(s.actualValue);
     if (isNaN(val)) {
-      updateSession(recyclerUid, { status: "Enter the actual element percentage first.", statusKind: "err" });
+      updateSession(key, { status: "Enter the actual element percentage first.", statusKind: "err" });
       return;
     }
 
-    updateSession(recyclerUid, { status: "Generating Groth16 ZK proof in browser...", statusKind: "info" });
+    updateSession(key, { status: "Generating Groth16 ZK proof in browser...", statusKind: "info" });
 
     try {
       const valueScaled = Math.round(val * 10);
@@ -150,23 +174,23 @@ export default function ManufacturerQueue() {
 
       s.session.send({ type: "zkp_result", proof, publicSignals });
 
-      updateSession(recyclerUid, {
+      updateSession(key, {
         proof,
         publicSignals,
         commitment: publicSignals[1],
         salt,
         payload2,
         proofGenerated: true,
-        status: "Proof sent to recycler. Submit to auditor ledger.",
+        status: "Proof sent to recycler. Awaiting verification...",
         statusKind: "ok",
       });
     } catch (error) {
-      updateSession(recyclerUid, { status: `Error: ${(error as Error).message}`, statusKind: "err" });
+      updateSession(key, { status: `Error: ${(error as Error).message}`, statusKind: "err" });
     }
   }
 
-  async function handleSubmitToLedger(recyclerUid: string) {
-    const s = sessionsRef.current[recyclerUid];
+  async function handleSubmitToLedger(key: string) {
+    const s = sessionsRef.current[key];
     if (
       !s?.passportId ||
       !s.proof ||
@@ -184,7 +208,7 @@ export default function ManufacturerQueue() {
     try {
       const result = await submitLedger({
         passport_id: s.passportId,
-        recycler_uid: recyclerUid,
+        recycler_uid: s.recyclerUid,
         element: s.element,
         operator: s.operator,
         threshold: s.threshold,
@@ -194,13 +218,14 @@ export default function ManufacturerQueue() {
         zk_proof: s.proof,
         public_signals: s.publicSignals,
       });
-      updateSession(recyclerUid, {
+      updateSession(key, {
         submitted: true,
         status: `Submitted to ledger (entry #${result.id}, zk_valid: ${result.zk_valid}). Session complete.`,
         statusKind: "ok",
       });
+      maybeCloseSession(key);
     } catch (error) {
-      updateSession(recyclerUid, { status: `Ledger error: ${(error as Error).message}`, statusKind: "err" });
+      updateSession(key, { status: `Ledger error: ${(error as Error).message}`, statusKind: "err" });
     }
   }
 
@@ -217,7 +242,7 @@ export default function ManufacturerQueue() {
         )}
 
         {sessionList.map((s) => (
-          <div key={s.recyclerUid} className="rounded-lg border p-4 space-y-3">
+          <div key={s.key} className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-medium">
                 {s.recyclerName} <Badge variant="outline" className="ml-2">RECYCLER</Badge>
@@ -241,14 +266,14 @@ export default function ManufacturerQueue() {
                   type="number"
                   placeholder="Actual element value (%)"
                   value={s.actualValue}
-                  onChange={(e) => updateSession(s.recyclerUid, { actualValue: e.target.value })}
+                  onChange={(e) => updateSession(s.key, { actualValue: e.target.value })}
                 />
-                <Button onClick={() => handleGenerateProof(s.recyclerUid)}>Generate & send proof</Button>
+                <Button onClick={() => handleGenerateProof(s.key)}>Generate & send proof</Button>
               </div>
             )}
 
             {s.proofGenerated && !s.submitted && (
-              <Button onClick={() => handleSubmitToLedger(s.recyclerUid)}>Submit to ledger</Button>
+              <Button onClick={() => handleSubmitToLedger(s.key)}>Submit to ledger</Button>
             )}
           </div>
         ))}

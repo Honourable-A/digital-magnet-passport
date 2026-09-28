@@ -6,7 +6,7 @@ import { joinPeersChannel, leavePeersChannel } from "@/lib/zkp/presence";
 import { startRecyclerSession, type RecyclerSessionHandle, type StatusKind } from "@/lib/zkp/webrtc";
 import { verifyProof } from "@/lib/zkp/groth16";
 import { flagTampered, getLedgerEntries } from "@/lib/zkp/ledger";
-import type { DataChannelMessage, PresencePeer } from "@/lib/zkp/types";
+import type { PresencePeer } from "@/lib/zkp/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -82,8 +82,8 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
     setLedgerResult(null);
     setStatus({ text: "Connecting...", kind: "info" });
 
-    const request: DataChannelMessage = {
-      type: "zkp_request",
+    const request = {
+      type: "zkp_request" as const,
       passport_id: passportIdentifier,
       element,
       operator,
@@ -98,9 +98,13 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
       onStatus: (text, kind) => setStatus({ text, kind }),
       onMessage: async (msg) => {
         if (msg.type !== "zkp_result") return;
-        sessionRef.current?.close();
         setStatus({ text: "Verifying ZK proof...", kind: "info" });
 
+        // Sent regardless of the verification outcome — it means "I finished
+        // processing your result", not "the claim was true". The Manufacturer
+        // waits for this (plus its own ledger submission) before closing, so the
+        // connection is never torn down mid-exchange from our side.
+        let success = false;
         try {
           const ok = await verifyProof(msg.publicSignals, msg.proof);
           if (!ok) {
@@ -120,6 +124,7 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
           const claimMet = msg.publicSignals[0] === "1";
           const commitment = msg.publicSignals[1];
           receivedRef.current = { commitment, proof: msg.proof };
+          success = true;
           setStatus({
             text: claimMet ? "Proof verified — claim satisfied." : "Proof verified — claim not met.",
             kind: claimMet ? "ok" : "warn",
@@ -128,6 +133,8 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
         } catch (error) {
           setStatus({ text: `Verification error: ${(error as Error).message}`, kind: "err" });
         } finally {
+          sessionRef.current?.send({ type: "zkp_result_ack", success });
+          sessionRef.current?.markComplete();
           setSending(false);
         }
       },
