@@ -24,6 +24,15 @@ const STATUS_COLOR: Record<StatusKind, string> = {
   err: "text-red-600",
 };
 
+// publicSignals[0] is the circuit's actual claim result ("was the threshold met"),
+// distinct from zk_valid (whether the *proof itself* is cryptographically sound). It's
+// only meaningful when the proof checks out — an invalid or tampered proof carries no
+// guarantee that publicSignals[0] reflects anything real, so it's not shown for those.
+function claimResult(entry: LedgerEntry): boolean | null {
+  if (entry.tampered || entry.zk_valid !== true) return null;
+  return entry.public_signals?.[0] === "1";
+}
+
 interface RequestResult {
   ok: boolean;
   mismatch?: boolean;
@@ -306,27 +315,37 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
         )}
         {!historyLoading && history.length > 0 && (
           <div className="space-y-2">
-            {history.map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                <span>
-                  {entry.element} {entry.operator === "gt" ? ">" : "<"} {entry.threshold}% —{" "}
-                  {new Date(entry.submitted_at).toLocaleString()}
-                </span>
-                <span
-                  className={
-                    entry.tampered
-                      ? "font-medium text-red-700"
-                      : entry.zk_valid === true
-                        ? "font-medium text-green-700"
-                        : entry.zk_valid === false
+            {history.map((entry) => {
+              const met = claimResult(entry);
+              return (
+                <div key={entry.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span>
+                    {entry.element} {entry.operator === "gt" ? ">" : "<"} {entry.threshold}% —{" "}
+                    {new Date(entry.submitted_at).toLocaleString()}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {met !== null && (
+                      <span className={met ? "font-medium text-green-700" : "font-medium text-amber-700"}>
+                        {met ? "Claim satisfied" : "Claim not met"}
+                      </span>
+                    )}
+                    <span
+                      className={
+                        entry.tampered
                           ? "font-medium text-red-700"
-                          : "text-muted-foreground"
-                  }
-                >
-                  {entry.tampered ? "Tampered" : entry.zk_valid === null ? "Pending" : entry.zk_valid ? "Verified" : "Invalid"}
-                </span>
-              </div>
-            ))}
+                          : entry.zk_valid === true
+                            ? "font-medium text-green-700"
+                            : entry.zk_valid === false
+                              ? "font-medium text-red-700"
+                              : "text-muted-foreground"
+                      }
+                    >
+                      {entry.tampered ? "Tampered" : entry.zk_valid === null ? "Pending" : entry.zk_valid ? "Verified" : "Invalid"}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
