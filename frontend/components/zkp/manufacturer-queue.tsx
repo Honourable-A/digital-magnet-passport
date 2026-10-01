@@ -173,6 +173,12 @@ export default function ManufacturerQueue() {
       const payload2 = paillierEncrypt(valueScaled, getHePublicKeyHex());
 
       s.session.send({ type: "zkp_result", proof, publicSignals });
+      // Mark complete as soon as the proof is sent, not once the ack arrives — the
+      // Recycler's verification (loading the snarkjs wasm, running the Groth16 check)
+      // takes real time, and a transient ICE hiccup during that wait was previously
+      // still reported as a hard "WebRTC connection failed" because nothing had told
+      // the connection-state handler the exchange was already effectively done.
+      s.session.markComplete();
 
       updateSession(key, {
         proof,
@@ -229,6 +235,21 @@ export default function ManufacturerQueue() {
     }
   }
 
+  // Answers "do I need to click Submit to ledger to close the session correctly" —
+  // no: this ends the session cleanly without recording a ledger entry, for cases
+  // where the Manufacturer decides not to submit (e.g. they don't want this
+  // particular check recorded, or the Recycler's verification failed).
+  function handleCloseSession(key: string) {
+    const s = sessionsRef.current[key];
+    s?.session?.markComplete();
+    s?.session?.close();
+    setSessions((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
   const sessionList = Object.values(sessions);
 
   return (
@@ -273,7 +294,18 @@ export default function ManufacturerQueue() {
             )}
 
             {s.proofGenerated && !s.submitted && (
-              <Button onClick={() => handleSubmitToLedger(s.key)}>Submit to ledger</Button>
+              <div className="flex gap-2">
+                <Button onClick={() => handleSubmitToLedger(s.key)}>Submit to ledger</Button>
+                <Button variant="outline" onClick={() => handleCloseSession(s.key)}>
+                  Close without submitting
+                </Button>
+              </div>
+            )}
+
+            {s.submitted && (
+              <Button variant="outline" onClick={() => handleCloseSession(s.key)}>
+                Dismiss
+              </Button>
             )}
           </div>
         ))}

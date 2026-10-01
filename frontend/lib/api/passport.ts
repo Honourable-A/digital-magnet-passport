@@ -87,14 +87,12 @@ ascending:true
 
 
 
-console.log(
+if(error){
+
+console.error(
 "PASSPORT LIST ERROR:",
 error
 );
-
-
-
-if(error){
 
 throw error;
 

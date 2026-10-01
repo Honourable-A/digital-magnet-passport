@@ -6,7 +6,7 @@ import { joinPeersChannel, leavePeersChannel } from "@/lib/zkp/presence";
 import { startRecyclerSession, type RecyclerSessionHandle, type StatusKind } from "@/lib/zkp/webrtc";
 import { verifyProof } from "@/lib/zkp/groth16";
 import { flagTampered, getLedgerEntries } from "@/lib/zkp/ledger";
-import type { PresencePeer } from "@/lib/zkp/types";
+import type { LedgerEntry, PresencePeer } from "@/lib/zkp/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,10 +43,30 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
   const [result, setResult] = useState<RequestResult | null>(null);
   const [ledgerResult, setLedgerResult] = useState<string | null>(null);
   const [checkingLedger, setCheckingLedger] = useState(false);
+  const [history, setHistory] = useState<LedgerEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   const presenceChannelRef = useRef<ReturnType<typeof joinPeersChannel> | null>(null);
   const sessionRef = useRef<RecyclerSessionHandle | null>(null);
   const receivedRef = useRef<{ commitment: string; proof: Record<string, unknown> } | null>(null);
+  const meRef = useRef<{ id: string; email: string } | null>(null);
+
+  // The visible record of past requests the Prof's feedback asked for — backed by
+  // ledger_entry (the durable record every submission already writes to), scoped to
+  // this Recycler's own submissions for this passport, so it survives reloads instead
+  // of living only in transient component state.
+  async function loadHistory() {
+    if (!meRef.current) return;
+    setHistoryLoading(true);
+    try {
+      const entries = await getLedgerEntries(passportIdentifier);
+      setHistory(entries.filter((e) => e.recycler_uid === meRef.current!.id));
+    } catch {
+      // leave history as-is — this is a convenience list, not critical path
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -55,11 +75,14 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
       const user = await getCurrentUser();
       if (cancelled) return;
       setMe({ id: user.id, email: user.email });
+      meRef.current = { id: user.id, email: user.email };
 
       presenceChannelRef.current = joinPeersChannel(
         { supabaseUid: user.id, email: user.email, role: "RECYCLER", status: "online" },
         (allPeers) => setPeers(allPeers.filter((p) => p.role === "MANUFACTURER")),
       );
+
+      loadHistory();
     })();
 
     return () => {
@@ -67,7 +90,8 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
       sessionRef.current?.close();
       if (presenceChannelRef.current) leavePeersChannel(presenceChannelRef.current);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passportIdentifier]);
 
   async function handleSend() {
     if (!me || !targetUid) return;
@@ -99,6 +123,15 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
       onMessage: async (msg) => {
         if (msg.type !== "zkp_result") return;
         setStatus({ text: "Verifying ZK proof...", kind: "info" });
+
+        // Mark complete the instant the payload arrives, not after verification
+        // finishes. Verification involves loading the snarkjs wasm and running the
+        // actual Groth16 check, which can take a real amount of time — if a transient
+        // ICE hiccup happened during that window, the connection-state handler would
+        // still have reported it as a hard failure, since expectedClose was only set
+        // afterward. The data has already done its job once it's received; anything
+        // that happens to the transport after that is no longer our concern.
+        sessionRef.current?.markComplete();
 
         // Sent regardless of the verification outcome — it means "I finished
         // processing your result", not "the claim was true". The Manufacturer
@@ -134,8 +167,8 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
           setStatus({ text: `Verification error: ${(error as Error).message}`, kind: "err" });
         } finally {
           sessionRef.current?.send({ type: "zkp_result_ack", success });
-          sessionRef.current?.markComplete();
           setSending(false);
+          loadHistory();
         }
       },
     });
@@ -264,6 +297,39 @@ export default function RecyclerRequest({ passportIdentifier }: { passportIdenti
           )}
         </div>
       )}
+
+      <div className="space-y-2 border-t pt-4">
+        <h4 className="text-sm font-medium">Your verification requests for this passport</h4>
+        {historyLoading && <p className="text-sm text-muted-foreground">Loading history...</p>}
+        {!historyLoading && history.length === 0 && (
+          <p className="text-sm text-muted-foreground">No requests yet.</p>
+        )}
+        {!historyLoading && history.length > 0 && (
+          <div className="space-y-2">
+            {history.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <span>
+                  {entry.element} {entry.operator === "gt" ? ">" : "<"} {entry.threshold}% —{" "}
+                  {new Date(entry.submitted_at).toLocaleString()}
+                </span>
+                <span
+                  className={
+                    entry.tampered
+                      ? "font-medium text-red-700"
+                      : entry.zk_valid === true
+                        ? "font-medium text-green-700"
+                        : entry.zk_valid === false
+                          ? "font-medium text-red-700"
+                          : "text-muted-foreground"
+                  }
+                >
+                  {entry.tampered ? "Tampered" : entry.zk_valid === null ? "Pending" : entry.zk_valid ? "Verified" : "Invalid"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
